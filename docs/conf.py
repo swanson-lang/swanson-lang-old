@@ -2,12 +2,12 @@
 
 import sys, os
 
-extensions = []
+extensions = ['sphinx.ext.intersphinx']
 source_suffix = '.rst'
 master_doc = 'index'
-project_name = u'APPNAME'
-project_slug = u'appname'
-company = u'COMPANY'
+project_name = u'Swanson'
+project_slug = u'swanson'
+company = u'RedJack, LLC'
 copyright_years = u'2012'
 
 default_role = 'c:func'
@@ -19,12 +19,9 @@ rst_epilog = """
 
 # Intersphinx stuff
 
-# If your documentation uses intersphinx to link to other Sphinx
-# documentation sets, uncomment and fill in the following.
-#
-#intersphinx_mapping = {
-#    'libcork': ('http://libcork.readthedocs.org/en/latest/', None),
-#}
+intersphinx_mapping = {
+    'libcork': ('http://libcork.readthedocs.org/en/latest/', None),
+}
 
 # Our CMake build scripts will insert overrides below if the prereq
 # libraries have installed their Sphinx documentation locally.  DO NOT
