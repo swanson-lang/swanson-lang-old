@@ -1,0 +1,2 @@
+{ "type": "string_constant", "result": "x", "contents": "hello" }
+{ "type": "operation_call", "target": "target", "operation": "operation", "params": [] }

@@ -391,7 +391,10 @@ swan_s0_parse(const char *buf, size_t len, struct swan_s0_callback *callback)
     cork_array_init(&state.buffers);
     cork_array_init(&state.params);
 
-    rc = swan_parse_statement(&state);
+    do {
+        rc = swan_parse_statement(&state);
+        skip_whitespace(&state);
+    } while (rc == 0 && state.len > 0);
 
     for (i = 0; i < cork_array_size(&state.buffers); i++) {
         cork_buffer_done(&cork_array_at(&state.buffers, i));
