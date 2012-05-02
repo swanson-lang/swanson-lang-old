@@ -24,9 +24,18 @@ target_link_libraries(libswanson
     ${CORK_LIBRARIES}
 )
 
-install(TARGETS libswanson
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib)
+install(TARGETS libswanson DESTINATION lib)
+
+#-----------------------------------------------------------------------
+# Build the command-line programs
+
+set(SWAN_SRC
+    swan/swan.c
+)
+
+add_executable(swan ${SWAN_SRC})
+target_link_libraries(swan libswanson)
+install(TARGETS swan DESTINATION bin)
 
 #-----------------------------------------------------------------------
 # Generate the pkg-config file
