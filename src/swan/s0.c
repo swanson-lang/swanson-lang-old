@@ -23,6 +23,53 @@
 
 
 /*-----------------------------------------------------------------------
+ * Helper functions
+ */
+
+#define READ_BUF_SIZE  65536
+static char  READ_BUF[READ_BUF_SIZE];
+
+static void
+read_file(const char *filename, struct cork_buffer *dest)
+{
+    FILE  *file;
+    bool  should_close;
+    size_t  bytes_read;
+
+    /* Open the input file. */
+    if (filename == NULL) {
+        should_close = false;
+        file = stdin;
+        filename = "<stdin>";
+    } else {
+        should_close = true;
+        file = fopen(filename, "r");
+        if (file == NULL) {
+            fprintf(stderr, "Error opening %s:\n  %s\n",
+                    filename, strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    /* Read in the contents of the file. */
+    while ((bytes_read = fread(READ_BUF, 1, READ_BUF_SIZE, file)) != 0) {
+        cork_buffer_append(dest, READ_BUF, bytes_read);
+    }
+
+    if (ferror(file)) {
+        fprintf(stderr, "Error reading from %s:\n  %s\n",
+                filename, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    /* Close the file if necessary. */
+    if (should_close) {
+        fclose(file);
+    }
+}
+
+
+/*-----------------------------------------------------------------------
  * swan s0 verify
  */
 
@@ -92,7 +139,8 @@ print_quoted_string(const char *str)
 }
 
 static int
-swan_s0_verify_operation_call(const char *target, const char *operation_name,
+swan_s0_verify_operation_call(struct swan_s0_callback *callback,
+                              const char *target, const char *operation_name,
                               size_t param_count, const char **params)
 {
     bool  first;
@@ -118,7 +166,8 @@ swan_s0_verify_operation_call(const char *target, const char *operation_name,
 }
 
 static int
-swan_s0_verify_string_constant(const char *result, const char *contents,
+swan_s0_verify_string_constant(struct swan_s0_callback *callback,
+                               const char *result, const char *contents,
                                size_t content_length)
 {
     printf("{ \"type\": \"string_constant\", \"result\": ");
@@ -134,51 +183,21 @@ static struct swan_s0_callback  swan_s0_verify_callback = {
     swan_s0_verify_string_constant
 };
 
-#define READ_BUF_SIZE  65536
-static char  READ_BUF[READ_BUF_SIZE];
-
 static void
 swan_s0_verify(int argc, char **argv)
 {
-    FILE  *file;
     int  rc;
-    bool  should_close;
-    size_t  bytes_read;
     struct cork_buffer  buf = CORK_BUFFER_INIT();
 
     /* Open the input file. */
-    if (argc == 0) {
-        should_close = false;
-        file = stdin;
-    } else if (argc == 1) {
-        should_close = true;
-        file = fopen(argv[0], "r");
-        if (file == NULL) {
-            fprintf(stderr, "Error opening %s:\n  %s\n",
-                    argv[0], strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-    } else {
+    if (argc > 1) {
         cork_command_show_help
             (&verify, "Cannot verify more than one input file.");
         exit(EXIT_FAILURE);
     }
 
     /* Read in the contents of the file. */
-    while ((bytes_read = fread(READ_BUF, 1, READ_BUF_SIZE, file)) != 0) {
-        cork_buffer_append(&buf, READ_BUF, bytes_read);
-    }
-
-    if (ferror(file)) {
-        fprintf(stderr, "Error reading from %s:\n  %s\n",
-                argv[0], strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
-    /* Close the file if necessary. */
-    if (should_close) {
-        fclose(file);
-    }
+    read_file(argc == 0? NULL: argv[0], &buf);
 
     /* Parse the file, printing out any error that occurs. */
     swan_s0_parse((char *) buf.buf, buf.size, &swan_s0_verify_callback);
@@ -195,11 +214,74 @@ swan_s0_verify(int argc, char **argv)
 
 
 /*-----------------------------------------------------------------------
+ * swan s0 evaluate
+ */
+
+#define EVALUATE_SHORT_DESC \
+    "Evaluate the contents of an S0 file"
+
+#define EVALUATE_USAGE_SUFFIX \
+    "[<input file>]"
+
+#define EVALUATE_HELP_TEXT \
+"Reads in an S0 file and evaluates it.\n" \
+"\n" \
+"Options:\n" \
+"  [<input file>]\n" \
+"    The S0 file to read.  If this option is not present, we'll read\n" \
+"    from standard input.\n" \
+
+static void
+swan_s0_evaluate(int argc, char **argv);
+
+static struct cork_command  evaluate =
+    cork_leaf_command("evaluate",
+                      EVALUATE_SHORT_DESC,
+                      EVALUATE_USAGE_SUFFIX,
+                      EVALUATE_HELP_TEXT,
+                      NULL, swan_s0_evaluate);
+
+static void
+swan_s0_evaluate(int argc, char **argv)
+{
+    int  rc;
+    struct cork_buffer  buf = CORK_BUFFER_INIT();
+    struct swan_s0_evaluator  *eval;
+
+    /* Open the input file. */
+    if (argc > 1) {
+        cork_command_show_help
+            (&verify, "Cannot verify more than one input file.");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Read in the contents of the file. */
+    read_file(argc == 0? NULL: argv[0], &buf);
+
+    /* Evaluate the file, printing out any error that occurs. */
+    eval = swan_s0_evaluator_new_kernel();
+    swan_s0_parse((char *) buf.buf, buf.size, &eval->callback);
+    if (cork_error_occurred()) {
+        rc = EXIT_FAILURE;
+        fprintf(stderr, "%s\n", cork_error_message());
+    } else {
+        rc = EXIT_SUCCESS;
+    }
+
+    swan_s0_evaluator_free(eval);
+    cork_buffer_done(&buf);
+    exit(rc);
+}
+
+
+/*-----------------------------------------------------------------------
  * Subcommand list
  */
 
 static struct cork_command  *subcommands[] = {
-    &verify
+    &evaluate,
+    &verify,
+    NULL
 };
 
 struct cork_command  s0_command =

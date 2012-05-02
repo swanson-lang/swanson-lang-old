@@ -87,12 +87,13 @@ struct buf {
 
 #define OPERATION_CALLBACK \
     (buf->callback->operation_call \
-        (buf->target, buf->operation_name, \
+        (buf->callback, buf->target, buf->operation_name, \
          cork_array_size(&buf->params), &cork_array_at(&buf->params, 0)))
 
 #define STRING_CALLBACK \
     (buf->callback->string_constant \
-        (cork_array_at(&buf->params, 0), contents, content_length))
+        (buf->callback, cork_array_at(&buf->params, 0), \
+         contents, content_length))
 
 static inline struct cork_buffer *
 new_buffer(struct buf *buf)

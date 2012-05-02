@@ -14,7 +14,9 @@ include_directories(../include)
 
 set(LIBSWANSON_SRC
     libswanson/kernel.c
+    libswanson/s0-evaluate.c
     libswanson/s0-parser.c
+    libswanson/scope.c
 )
 
 add_library(libswanson SHARED ${LIBSWANSON_SRC})

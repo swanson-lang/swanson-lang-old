@@ -18,7 +18,8 @@
 
 enum swan_error {
     SWAN_UNDEFINED,
-    SWAN_S0_PARSE_ERROR
+    SWAN_S0_PARSE_ERROR,
+    SWAN_S0_UNDEFINED_IDENTIFIER
 };
 
 #define swan_set_error(code, ...) \
@@ -27,5 +28,7 @@ enum swan_error {
     swan_set_error(SWAN_UNDEFINED, __VA_ARGS__)
 #define swan_s0_parse_error(...) \
     swan_set_error(SWAN_S0_PARSE_ERROR, __VA_ARGS__)
+#define swan_s0_undefined_identifier(...) \
+    swan_set_error(SWAN_S0_UNDEFINED_IDENTIFIER, __VA_ARGS__)
 
 #endif /* SWANSON_ERROR_H */
