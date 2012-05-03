@@ -61,7 +61,8 @@ struct buf {
 #define IS_ALPHA(ch) \
     (((ch) >= 'a' && (ch) <= 'z') || \
      ((ch) >= 'A' && (ch) <= 'Z') || \
-     ((ch) == '_'))
+     ((ch) == '_') || \
+     ((ch) == '~'))
 
 #define IS_ALNUM(ch) \
     (IS_ALPHA(ch) || ((ch) >= '0' && (ch) <= '9'))

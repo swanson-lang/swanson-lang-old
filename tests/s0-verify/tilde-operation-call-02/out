@@ -1,0 +1,1 @@
+{ "type": "operation_call", "target": "target", "operation": "~operation", "params": ["param1", "param2"] }
