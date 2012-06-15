@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+sharedir=${prefix}/share
+sphinxdir=${sharedir}/doc/swanson/html
+
+Name: swanson
+Description: A new programming language that's pretty cool
+Version: @VERSION@
+URL: http://github.com/redjack/swanson/
+Libs: -L${libdir} -lswanson
+Cflags: -I${includedir}
