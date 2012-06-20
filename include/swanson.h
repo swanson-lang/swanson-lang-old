@@ -8,4 +8,10 @@
  * ----------------------------------------------------------------------
  */
 
-#include "swanson/metamodel.h"
+#ifndef SWANSON_H
+#define SWANSON_H
+
+/* Include all of the parts */
+#include <swanson/metamodel.h>
+
+#endif /* SWANSON_H */
