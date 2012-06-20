@@ -13,7 +13,7 @@ include_directories(../include)
 # Build the library
 
 set(LIBSWANSON_SRC
-    libswanson/foo.c
+    libswanson/kernel.c
 )
 
 add_library(libswanson SHARED ${LIBSWANSON_SRC})

@@ -15,6 +15,8 @@ Contents
 
    metamodel
    memory-management
+   prelude
+   kernel
    c
 
 

@@ -1,0 +1,38 @@
+/* -*- coding: utf-8 -*-
+ * ----------------------------------------------------------------------
+ * Copyright © 2012, RedJack, LLC.
+ * All rights reserved.
+ *
+ * Please see the LICENSE.txt file in this distribution for license
+ * details.
+ * ----------------------------------------------------------------------
+ */
+
+#include <assert.h>
+
+#include "swanson/kernel.h"
+#include "swanson/metamodel.h"
+#include "swanson/helpers/metamodel.h"
+
+
+_static_op_(swan_static, alias)
+{
+    assert(param_count == 2);
+    assert(swan_value_is_empty(&params[1]));
+    params[1] = params[0];
+    return 0;
+}
+
+_static_op_(swan_static, unref)
+{
+    assert(param_count == 1);
+    swan_value_clear(&params[0]);
+    return 0;
+}
+
+_extern_opset_(swan_static)
+{
+    get_static_op("~alias", swan_static, alias);
+    get_static_op("~unref", swan_static, unref);
+    return NULL;
+}
