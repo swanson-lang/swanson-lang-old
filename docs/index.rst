@@ -15,6 +15,7 @@ Contents
 
    metamodel
    memory-management
+   c
 
 
 Indices and tables
