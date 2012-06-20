@@ -14,6 +14,7 @@ Contents
    :maxdepth: 2
 
    metamodel
+   memory-management
 
 
 Indices and tables
