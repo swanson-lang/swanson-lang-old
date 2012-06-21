@@ -8,12 +8,18 @@
  * ----------------------------------------------------------------------
  */
 
-#include "kernel/00-operations.c.in"
-#include "kernel/00-opsets.c.in"
-#include "kernel/00-simple.c.in"
-#include "kernel/01-explicit.c.in"
-#include "kernel/01-static.c.in"
 
-#include "kernel/10-size.c.in"
+_constant_op_(swan_kernel, sizeof, &_swan_kernel_sizeof__opset, NULL);
 
-#include "kernel/99-kernel.c.in"
+_simple_opset_(swan_kernel)
+{
+    get_static_op("sizeof", swan_kernel, sizeof);
+    return NULL;
+}
+
+void
+swan_kernel_get(struct swan_value *dest)
+{
+    dest->opset = &_swan_kernel__opset;
+    dest->content = NULL;
+}

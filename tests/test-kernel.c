@@ -50,9 +50,9 @@
 START_TEST(test__static__operations)
 {
     DESCRIBE_TEST;
-    check_operation(opset, &swan_static__opset, "~alias");
-    check_operation(opset, &swan_static__opset, "~unref");
-    check_unknown_operation(opset, &swan_static__opset);
+    check_operation(opset, swan_static__opset(), "~alias");
+    check_operation(opset, swan_static__opset(), "~unref");
+    check_unknown_operation(opset, swan_static__opset());
 }
 END_TEST
 
@@ -64,10 +64,38 @@ END_TEST
 START_TEST(test__size__operations)
 {
     DESCRIBE_TEST;
-    check_operation(opset, &swan_size__static__opset, "~alias");
-    check_operation(opset, &swan_size__static__opset, "~unref");
-    check_operation(opset, &swan_size__static__opset, "print");
-    check_unknown_operation(opset, &swan_size__static__opset);
+
+    check_operation(opset, swan_size__static__opset(), "~alias");
+    check_operation(opset, swan_size__static__opset(), "~unref");
+    check_operation(opset, swan_size__static__opset(), "print");
+    check_unknown_operation(opset, swan_size__static__opset());
+
+    check_operation(opset, swan_size__explicit__opset(), "~alloc");
+    check_operation(opset, swan_size__explicit__opset(), "~unref");
+    check_operation(opset, swan_size__explicit__opset(), "print");
+    check_unknown_operation(opset, swan_size__explicit__opset());
+}
+END_TEST
+
+START_TEST(test__size__instances)
+{
+    DESCRIBE_TEST;
+
+    size_t  *result;
+    struct swan_value  params[3] =
+    { SWAN_VALUE_EMPTY, SWAN_VALUE_EMPTY, SWAN_VALUE_EMPTY };
+
+    swan_size_new(&params[1], 2);
+    swan_size_new(&params[2], 3);
+    fail_if_error(swan_value_evaluate(&params[1], "+", 3, params));
+    result = params[0].content;
+    fail_unless(*result == 5,
+                "Unexpected result: got %zu, expected %zu",
+                *result, (size_t) 5);
+
+    fail_if_error(swan_value_unref(&params[0]));
+    fail_if_error(swan_value_unref(&params[1]));
+    fail_if_error(swan_value_unref(&params[2]));
 }
 END_TEST
 
@@ -102,6 +130,7 @@ test_suite()
 
     TCase  *tc_size = tcase_create("size");
     tcase_add_test(tc_size, test__size__operations);
+    tcase_add_test(tc_size, test__size__instances);
     suite_add_tcase(s, tc_size);
 
     TCase  *tc_kernel = tcase_create("kernel");

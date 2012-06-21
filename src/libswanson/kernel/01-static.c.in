@@ -12,7 +12,6 @@
 
 #include "swanson/kernel.h"
 #include "swanson/metamodel.h"
-#include "swanson/helpers/metamodel.h"
 
 
 _static_op_(swan_static, alias)
@@ -30,9 +29,30 @@ _static_op_(swan_static, unref)
     return 0;
 }
 
-_extern_opset_(swan_static)
+_public_simple_opset_(swan_static)
 {
     get_static_op("~alias", swan_static, alias);
     get_static_op("~unref", swan_static, unref);
     return NULL;
 }
+
+
+/*-----------------------------------------------------------------------
+ * Helper macros
+ */
+
+#define _declare_static_opset_  _declare_simple_opset_
+
+#define _static_opset_(name, base_name) \
+_simple_opset_(name) \
+{ \
+    try_get_operation(base_name); \
+    try_get_operation(swan_static); \
+    return NULL; \
+}
+
+#define static_opset  simple_opset
+
+#define _public_static_opset_(name, base_name) \
+_static_opset_(name, base_name) \
+_opset_accessor_(name, static_opset(name));

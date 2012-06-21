@@ -1,0 +1,65 @@
+/* -*- coding: utf-8 -*-
+ * ----------------------------------------------------------------------
+ * Copyright © 2012, RedJack, LLC.
+ * All rights reserved.
+ *
+ * Please see the LICENSE.txt file in this distribution for license
+ * details.
+ * ----------------------------------------------------------------------
+ */
+
+#include <string.h>
+
+#include <libcork/core.h>
+
+#include "swanson/metamodel.h"
+
+
+/*-----------------------------------------------------------------------
+ * Operation lookup functions
+ */
+
+#define try_get_operation(other) \
+    do { \
+        struct swan_operation  *__op = \
+            other##__get_operation(NULL, op_name); \
+        if (__op != NULL) { \
+            return __op; \
+        } \
+    } while (0)
+
+#define get_static_op(name, opset, c_name) \
+    do { \
+        if (strcmp(op_name, name) == 0) { \
+            return &opset##__##c_name##__op; \
+        } \
+    } while (0)
+
+#define _get_operation_(name) \
+static struct swan_operation * \
+name##__get_operation(struct swan_opset *opset, const char *op_name)
+
+
+/*-----------------------------------------------------------------------
+ * Operation sets
+ */
+
+static struct swan_opset *
+swan_opset__static__ref(struct swan_opset *opset)
+{
+    /* For static objects, there's nothing to reference. */
+    return opset;
+}
+
+static void
+swan_opset__static__unref(struct swan_opset *opset)
+{
+    /* For static objects, there's nothing to unreference. */
+}
+
+#define _opset_accessor_(name, opset) \
+struct swan_opset * \
+name##__opset(void) \
+{ \
+    return opset; \
+}

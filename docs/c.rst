@@ -60,6 +60,12 @@ is represented by an instance of :c:type:`swan_operation`.
       contain an operation with that name, you should set a
       :c:func:`swan_undefined` error and return ``NULL``.
 
+   .. member:: struct swan_opset \*(\*ref)(struct swan_opset \*opset)
+
+      Create a new reference to this operation set.  This is analogous to the
+      :py:meth:`~MemoryManagement.ref` method in our :doc:`memory management
+      interface <memory-management>`.
+
    .. member:: void (\*unref)(struct swan_opset \*opset)
 
       Remove a reference to this operation set.  This is analogous to the
@@ -71,6 +77,10 @@ is represented by an instance of :c:type:`swan_operation`.
    Return the operation in *opset* with the given name.  If *opset* doesn't
    contain an operation with that name, we'll raise a :c:func:`swan_undefined`
    error and return ``NULL``.
+
+.. function:: struct swan_opset \*swan_opset_ref(struct swan_opset \*opset)
+
+   Create a new reference to *opset*.
 
 .. function:: void swan_opset_unref(struct swan_opset \*opset)
 
@@ -116,23 +126,34 @@ We also have a helper method for calling an operation from a
       parameters, since not all operations take in a ``self`` parameter.
 
 
+.. function:: int swan_value_unref(struct swan_value \*value)
+
+   Unreference a value by calling its :py:meth:`~MemoryManagement.unref` method.
+
+
+.. macro:: struct swan_value  SWAN_VALUE_EMPTY
+
+   A static initializer that can be used to declare an empty value on the stack.
+
+.. function:: bool swan_value_is_empty(struct swan_value \*value)
+
+   Return whether the given *value* is empty.
+
+
 
 Naming conventions
 ------------------
 
 This section describes the naming convention that we follow in the C
-implementations of various Swanson entities.  You should follow these
-conventions if you write any C extensions; there are several helper macros that
-help you conform to these conventions.
+implementations of the Swanson kernel.  There are several helper macros that let
+help us adhere to these conventions.
 
 .. note::
 
-   These macros are **not** automatically defined when you include the
-   ``swanson.h`` header file, since they don't include a ``swan_`` prefix.  We
-   don't want to pollute your C identifier namespace unless you ask for the
-   macros.  To do so, you must explicitly include their header file::
-
-     #include <swanson/helpers/metamodel.h>
+   These macros are **not** defined in the public ``swanson.h`` header file.
+   They are **only** available in the C files that implement the Swanson kernel.
+   This section is intended for core Swanson developers; third-party C libraries
+   are integrated into Swanson using an entirely different mechanism.
 
 
 Operations
@@ -153,13 +174,35 @@ is because you'll only refer to the operation object in an operation set defined
 later in the file.) In this case, you can use the :c:macro:`_static_op_` macro
 to define your operation:
 
+.. macro:: _evaluate_(SYMBOL opset, SYMBOL name)
+
+   Declare a new evaluation function with the given *name*, which will belong to
+   a family of operation sets named *opset*.  The names of the operation's
+   constituent C objects will be named according the convention described above.
+
+   This macro should be immediately followed by the body of the evaluation
+   function::
+
+       _evaluate_(my_opset, my_operation)
+       {
+           printf("%p %zu %p %p\n",
+                  operation, param_count, params[0].opset, params[0].content);
+           return 0;
+       }
+
+   Note that the parameters of the evaluation function are declared using the
+   same names as in the :c:member:`~swan_operation.evaluate` documentation.
+
+
 .. macro:: _static_op_(SYMBOL opset, SYMBOL name)
 
-   Declare a new ``static`` operation instance with the given *name*, which will
-   belong to a family of operation sets named *opset*.  The names of the
-   operation's constituent C objects will be named according the convention
-   described above.  This macro should be immediately followed by the body of
-   the operation's evaluation function::
+   Declare a new operation instance with the given *name*, which will belong to
+   a family of operation sets named *opset*.  The names of the operation's
+   constituent C objects will be named according the convention described above.
+   The operation instance will be declared with ``static`` C linkage.
+
+   This macro should be immediately followed by the body of the operation's
+   evaluation function::
 
        _static_op_(my_opset, my_operation)
        {
@@ -191,18 +234,27 @@ will be ``static``, ``explicit``, and ``gc``.
 For each of the operation sets in this family, you must define the following C
 instances:
 
-* an *opset object* (an instance of :c:type:`swan_opset`), named
-  ``family__extension__opset``,
+* an *opset object* (an instance of :c:type:`swan_opset` or one of its
+  subclasses), named ``_family__extension__opset`` (note the leading
+  underscore),
 
 * an *operation lookup function* (the opset object's
   :c:member:`~swan_opset.get_operation` field), named
-  ``family__extension__get_operation``, and
+  ``family__extension__get_operation``,
 
 * a *free function* (the opset object's :c:member:`~swan_opset.unref` field),
-  named ``family__extension__unref``.
+  named ``family__extension__unref``, and
+
+* an *opset function*, named ``family__extension__opset``, which returns the
+  :c:type:`swan_opset` pointer for the opset object.
 
 
-There are several helper macros available.
+Operation lookup functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are several helper macros that make it easier to write operation lookup
+functions.  The first one lets you define a bare operation lookup function
+(without also declaring an operation set that uses that lookup function).
 
 .. macro:: _get_operation_(SYMBOL name)
 
@@ -221,32 +273,11 @@ There are several helper macros available.
    Note that the parameters of the evaluation function are declared using the
    same names as in the :c:member:`~swan_opset.get_operation` documentation.
 
-
-.. macro:: _extern_opset_(SYMBOL name)
-           _static_opset_(SYMBOL name)
-
-   Declare a new operation set with the given *name*.  The *name* should be of
-   the form ``family_extension``.  The ``extern`` variant declares the opset
-   object with normal C linkage, meaning that it will be an exported symbol in
-   the library or program that you're compiling.  The ``static`` variant
-   declares the opset object with ``static`` C linkage, so that it's only
-   visible within the current compilation unit.
-
-   The names of the operation's constituent C objects will be named according
-   the convention described above.  This macro should be immediately followed by
-   the body of the operation set's lookup function::
-
-       _get_operation_(family, extension)
-       {
-           printf("%p %s\n", opset, op_name);
-           return 0;
-       }
-
-   Note that the parameters of the evaluation function are declared using the
-   same names as in the :c:member:`~swan_opset.get_operation` documentation.
-
-Within each operation lookup function, you can use the following macros to
-list the operations defined in the set:
+Many of the other macros defined in this section also let you provide an
+operation lookup function, which presumably will be immediately attached to an
+operation set that you're also defining.  Regardless of which of these macros
+creates the operation lookup function for you, you can use the following macros
+to list the operations defined in the set:
 
 .. macro:: get_static_op(const char \*operation_name, SYMBOL opset, SYMBOL name)
 
@@ -266,6 +297,95 @@ list the operations defined in the set:
    to look for is given by the lookup function's *op_name* parameter.) If the
    other operation set has an operation with the requested name, it is returned.
    Otherwise, the macro does nothing.
+
+
+Simple operation sets
+^^^^^^^^^^^^^^^^^^^^^
+
+A simple operation set is one that can be declared as a C variable (i.e., it
+doesn't require any run-time state to construct it), and whose set of operations
+is defined at compile time.  A large majority of the operation sets in the
+Swanson kernel are simple operation sets.
+
+.. macro:: _simple_opset_(SYMBOL name)
+           _public_simple_opset_(SYMBOL name)
+
+   Declare a new "simple" operation set with the given *name*.  The *name*
+   should be of the form ``family_extension``.  The names of the operation's
+   constituent C objects will be named according the convention described above.
+
+   For both variants, the opset object is declared with ``static`` C linkage.
+   The ``public`` variant *also* defines a public opset function, that can be
+   used in other compilation units to get a pointer to the opset object.
+
+   The operations in this set must be defined at compile time.  You define the
+   operations by writing an operation lookup function.  This macro should be
+   immediately followed by the body of the lookup function::
+
+       _get_operation_(family, extension)
+       {
+           printf("%p %s\n", opset, op_name);
+           return 0;
+       }
+
+   Note that the parameters of the lookup function are declared using the same
+   names as in the :c:member:`~swan_opset.get_operation` documentation.
+
+.. macro:: struct swan_opset \*simple_opset(SYMBOL name)
+
+   Return a :c:type:`swan_opset` object that was declared via
+   :c:macro:`_simple_opset_` or :c:macro:`_public_simple_opset_`.  This macro
+   only works within the compilation unit that the operation set was defined in.
+
+
+Memory management
+^^^^^^^^^^^^^^^^^
+
+A common idiom in the kernel is to define a "base" operation set for a type, and
+then to provide additional operation sets that implement the :doc:`memory
+management operations <memory-management>` in different ways.
+
+.. rubric:: Static values
+
+.. macro:: _static_opset_(SYMBOL name, SYMBOL base_name)
+           _public_static_opset_(SYMBOL name, SYMBOL base_name)
+
+   Declare a new operation set that works with values that are declared with
+   ``static`` C linkage.  The new operation set will contain all of the
+   operations in the *base_name* operation lookup function, as well as the
+   appropriate memory management operations.
+
+   For both variants, the opset object is declared with ``static`` C linkage.
+   The ``public`` variant *also* defines a public opset function, that can be
+   used in other compilation units to get a pointer to the opset object.
+
+.. macro:: struct swan_opset \*static_opset(SYMBOL name)
+
+   Return a :c:type:`swan_opset` object that was declared via
+   :c:macro:`_static_opset_` or :c:macro:`_public_static_opset_`.  This macro
+   only works within the compilation unit that the operation set was defined in.
+
+
+.. rubric:: Explicit heap management
+
+.. macro:: _explicit_opset_(SYMBOL name, SYMBOL base_name)
+           _public_explicit_opset_(SYMBOL name, SYMBOL base_name)
+
+   Declare a new operation set that works with values that are allocated from
+   the heap and expicitly deallocated.  The new operation set will contain all
+   of the operations in the *base_name* operation lookup function, as well as
+   the appropriate memory management operations.
+
+   For both variants, the opset object is declared with ``static`` C linkage.
+   The ``public`` variant *also* defines a public opset function, that can be
+   used in other compilation units to get a pointer to the opset object.
+
+.. macro:: struct swan_opset \*explicit_opset(SYMBOL name)
+
+   Return a :c:type:`swan_opset` object that was declared via
+   :c:macro:`_explicit_opset_` or :c:macro:`_public_explicit_opset_`.  This
+   macro only works within the compilation unit that the operation set was
+   defined in.
 
 
 

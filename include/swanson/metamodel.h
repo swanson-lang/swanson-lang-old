@@ -33,12 +33,18 @@ struct swan_opset {
     struct swan_operation *
     (*get_operation)(struct swan_opset *opset, const char *name);
 
+    struct swan_opset *
+    (*ref)(struct swan_opset *opset);
+
     void
     (*unref)(struct swan_opset *opset);
 };
 
 #define swan_opset_get_operation(opset, name) \
     ((opset)->get_operation((opset), (name)))
+
+#define swan_opset_ref(opset) \
+    ((opset)->ref((opset)))
 
 #define swan_opset_unref(opset) \
     ((opset)->unref((opset)))
@@ -50,6 +56,8 @@ struct swan_value {
 };
 
 typedef cork_array(struct swan_value)  swan_value_array;
+
+#define SWAN_VALUE_EMPTY  { NULL, NULL }
 
 #define swan_value_clear(value) \
     do { \
@@ -63,7 +71,7 @@ typedef cork_array(struct swan_value)  swan_value_array;
     (swan_opset_get_operation((value)->opset, (op_name)))
 
 CORK_ATTR_UNUSED
-static int
+static inline int
 swan_value_evaluate(struct swan_value *value, const char *name,
                     size_t param_count, struct swan_value *params)
 {
@@ -75,6 +83,9 @@ swan_value_evaluate(struct swan_value *value, const char *name,
         return swan_operation_evaluate(op, param_count, params);
     }
 }
+
+#define swan_value_unref(value) \
+    swan_value_evaluate((value), "~unref", 1, (value))
 
 
 #endif /* SWANSON_METAMODEL_H */
