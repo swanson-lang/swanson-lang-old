@@ -48,11 +48,19 @@ swan_explicit_opset_new_from_size(struct swan_opset *base,
 
 CORK_ATTR_PURE
 struct swan_opset *
-swan_size__static__opset(void);
+swan_size__ro__static__opset(void);
 
 CORK_ATTR_PURE
 struct swan_opset *
-swan_size__explicit__opset(void);
+swan_size__ro__explicit__opset(void);
+
+CORK_ATTR_PURE
+struct swan_opset *
+swan_size__rw__static__opset(void);
+
+CORK_ATTR_PURE
+struct swan_opset *
+swan_size__rw__explicit__opset(void);
 
 void
 swan_size_new(struct swan_value *dest, size_t value);

@@ -65,19 +65,29 @@ START_TEST(test__size__operations)
 {
     DESCRIBE_TEST;
 
-    check_operation(opset, swan_size__static__opset(), "~alias");
-    check_operation(opset, swan_size__static__opset(), "~unref");
-    check_operation(opset, swan_size__static__opset(), "print");
-    check_unknown_operation(opset, swan_size__static__opset());
+    check_operation(opset, swan_size__ro__static__opset(), "~alias");
+    check_operation(opset, swan_size__ro__static__opset(), "~unref");
+    check_operation(opset, swan_size__ro__static__opset(), "print");
+    check_unknown_operation(opset, swan_size__ro__static__opset());
 
-    check_operation(opset, swan_size__explicit__opset(), "~alloc");
-    check_operation(opset, swan_size__explicit__opset(), "~unref");
-    check_operation(opset, swan_size__explicit__opset(), "print");
-    check_unknown_operation(opset, swan_size__explicit__opset());
+    check_operation(opset, swan_size__ro__explicit__opset(), "~alloc");
+    check_operation(opset, swan_size__ro__explicit__opset(), "~unref");
+    check_operation(opset, swan_size__ro__explicit__opset(), "print");
+    check_unknown_operation(opset, swan_size__ro__explicit__opset());
+
+    check_operation(opset, swan_size__rw__static__opset(), "~alias");
+    check_operation(opset, swan_size__rw__static__opset(), "~unref");
+    check_operation(opset, swan_size__rw__static__opset(), "print");
+    check_unknown_operation(opset, swan_size__rw__static__opset());
+
+    check_operation(opset, swan_size__rw__explicit__opset(), "~alloc");
+    check_operation(opset, swan_size__rw__explicit__opset(), "~unref");
+    check_operation(opset, swan_size__rw__explicit__opset(), "print");
+    check_unknown_operation(opset, swan_size__rw__explicit__opset());
 }
 END_TEST
 
-START_TEST(test__size__instances)
+START_TEST(test__size__add)
 {
     DESCRIBE_TEST;
 
@@ -96,6 +106,48 @@ START_TEST(test__size__instances)
     fail_if_error(swan_value_unref(&params[0]));
     fail_if_error(swan_value_unref(&params[1]));
     fail_if_error(swan_value_unref(&params[2]));
+}
+END_TEST
+
+START_TEST(test__size__assign)
+{
+    DESCRIBE_TEST;
+
+    size_t  *result;
+    struct swan_value  params[2] =
+    { SWAN_VALUE_EMPTY, SWAN_VALUE_EMPTY };
+
+    swan_size_new(&params[0], 2);
+    swan_size_new(&params[1], 3);
+    fail_if_error(swan_value_evaluate(&params[0], "=", 2, params));
+    result = params[0].content;
+    fail_unless(*result == 3,
+                "Unexpected result: got %zu, expected %zu",
+                *result, (size_t) 3);
+
+    fail_if_error(swan_value_unref(&params[0]));
+    fail_if_error(swan_value_unref(&params[1]));
+}
+END_TEST
+
+START_TEST(test__size__assign_add)
+{
+    DESCRIBE_TEST;
+
+    size_t  *result;
+    struct swan_value  params[2] =
+    { SWAN_VALUE_EMPTY, SWAN_VALUE_EMPTY };
+
+    swan_size_new(&params[0], 2);
+    swan_size_new(&params[1], 3);
+    fail_if_error(swan_value_evaluate(&params[0], "+=", 2, params));
+    result = params[0].content;
+    fail_unless(*result == 5,
+                "Unexpected result: got %zu, expected %zu",
+                *result, (size_t) 5);
+
+    fail_if_error(swan_value_unref(&params[0]));
+    fail_if_error(swan_value_unref(&params[1]));
 }
 END_TEST
 
@@ -130,7 +182,9 @@ test_suite()
 
     TCase  *tc_size = tcase_create("size");
     tcase_add_test(tc_size, test__size__operations);
-    tcase_add_test(tc_size, test__size__instances);
+    tcase_add_test(tc_size, test__size__add);
+    tcase_add_test(tc_size, test__size__assign);
+    tcase_add_test(tc_size, test__size__assign_add);
     suite_add_tcase(s, tc_size);
 
     TCase  *tc_kernel = tcase_create("kernel");
