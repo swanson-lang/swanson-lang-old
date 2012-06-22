@@ -1,0 +1,37 @@
+/* -*- coding: utf-8 -*-
+ * ----------------------------------------------------------------------
+ * Copyright © 2012, RedJack, LLC.
+ * All rights reserved.
+ *
+ * Please see the LICENSE.txt file in this distribution for license
+ * details.
+ * ----------------------------------------------------------------------
+ */
+
+#include <libcork/core.h>
+
+#include "swanson/metamodel.h"
+
+
+/*-----------------------------------------------------------------------
+ * Simple operation sets
+ */
+
+#define _declare_simple_opset_(name) \
+static struct swan_opset  _##name##__opset;
+
+#define _simple_opset_(name) \
+_get_operation_(name); \
+static struct swan_opset  _##name##__opset = { \
+    name##__get_operation, \
+    swan_opset__static__ref, \
+    swan_opset__static__unref \
+}; \
+_get_operation_(name)
+
+#define simple_opset(name)  (&_##name##__opset)
+
+#define _public_simple_opset_(name) \
+static struct swan_opset  _##name##__opset; \
+_opset_accessor_(name, simple_opset(name)); \
+_simple_opset_(name)

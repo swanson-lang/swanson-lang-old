@@ -1,0 +1,89 @@
+/* -*- coding: utf-8 -*-
+ * ----------------------------------------------------------------------
+ * Copyright © 2012, RedJack, LLC.
+ * All rights reserved.
+ *
+ * Please see the LICENSE.txt file in this distribution for license
+ * details.
+ * ----------------------------------------------------------------------
+ */
+
+#include <assert.h>
+#include <stdio.h>
+
+#include <libcork/core.h>
+
+#include "swanson/kernel.h"
+#include "swanson/metamodel.h"
+
+
+_declare_explicit_opset_(swan_size__explicit);
+
+void
+swan_size_new(struct swan_value *dest, size_t value)
+{
+    size_t  *content = cork_new(size_t);
+    *content = value;
+    dest->opset = explicit_opset(swan_size__explicit);
+    dest->content = content;
+}
+
+_static_op_(swan_size, print)
+{
+    assert(param_count == 1);
+    size_t  *self = params[0].content;
+    printf("%zu\n", *self);
+    return 0;
+}
+
+_static_op_(swan_size, add)
+{
+    assert(param_count == 3);
+    assert(swan_value_is_empty(&params[0]));
+    size_t  *lhs = params[1].content;
+    size_t  *rhs = params[2].content;
+    swan_size_new(&params[0], *lhs + *rhs);
+    return 0;
+}
+
+_simple_opset_(swan_size__base)
+{
+    get_static_op("+", swan_size, add);
+    get_static_op("print", swan_size, print);
+    return NULL;
+}
+
+_public_static_opset_(swan_size__static, swan_size__base);
+_public_explicit_opset_(swan_size__explicit,
+                        &_swan_size__base__opset, sizeof(size_t));
+
+
+#define builtin_sizes(_) \
+    _(int8, int8_t) \
+    _(int16, int16_t) \
+    _(int32, int32_t) \
+    _(int64, int64_t) \
+    _(char, char) \
+    _(short, short) \
+    _(int, int) \
+    _(long, long) \
+    _(pointer, void *) \
+    _(size, size_t) \
+
+#define sizeof_op(name, c_type) \
+static const size_t  swan_kernel_sizeof__##name = sizeof(c_type); \
+_constant_op_(swan_kernel_sizeof, name, \
+              &_swan_size__static__opset, \
+              (size_t *) &swan_kernel_sizeof__##name); \
+
+builtin_sizes(sizeof_op);
+#undef sizeof_op
+
+_simple_opset_(swan_kernel_sizeof)
+{
+#define sizeof_get(name, c_type) \
+    get_static_op(#name, swan_kernel_sizeof, name);
+    builtin_sizes(sizeof_get);
+#undef sizeof_get
+    return NULL;
+}

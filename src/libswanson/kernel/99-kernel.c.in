@@ -1,0 +1,25 @@
+/* -*- coding: utf-8 -*-
+ * ----------------------------------------------------------------------
+ * Copyright © 2012, RedJack, LLC.
+ * All rights reserved.
+ *
+ * Please see the LICENSE.txt file in this distribution for license
+ * details.
+ * ----------------------------------------------------------------------
+ */
+
+
+_constant_op_(swan_kernel, sizeof, &_swan_kernel_sizeof__opset, NULL);
+
+_simple_opset_(swan_kernel)
+{
+    get_static_op("sizeof", swan_kernel, sizeof);
+    return NULL;
+}
+
+void
+swan_kernel_get(struct swan_value *dest)
+{
+    dest->opset = &_swan_kernel__opset;
+    dest->content = NULL;
+}

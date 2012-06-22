@@ -13,6 +13,11 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   metamodel
+   memory-management
+   prelude
+   kernel
+   c
 
 
 Indices and tables
