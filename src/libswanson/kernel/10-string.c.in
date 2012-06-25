@@ -1,0 +1,52 @@
+/* -*- coding: utf-8 -*-
+ * ----------------------------------------------------------------------
+ * Copyright © 2012, RedJack, LLC.
+ * All rights reserved.
+ *
+ * Please see the LICENSE.txt file in this distribution for license
+ * details.
+ * ----------------------------------------------------------------------
+ */
+
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <libcork/core.h>
+
+#include "swanson/kernel.h"
+#include "swanson/metamodel.h"
+
+
+_declare_explicit_opset_(swan_string__ro__explicit);
+
+void
+swan_string_new(struct swan_value *dest, const void *data, size_t size)
+{
+    struct swan_string  *str;
+    assert(swan_value_is_empty(dest));
+    str = cork_malloc(sizeof(struct swan_string) + size);
+    str->data = (void *) (str + 1);
+    str->size = size;
+    memcpy(str->data, data, size);
+    dest->opset = explicit_opset(swan_string__ro__explicit);
+    dest->content = str;
+}
+
+_static_op_(swan_string, print)
+{
+    assert(param_count == 1);
+    struct swan_string  *self = params[0].content;
+    printf("%.*s\n", (int) self->size, (char *) self->data);
+    return 0;
+}
+
+_simple_opset_(swan_string__ro)
+{
+    get_static_op("print", swan_string, print);
+    return NULL;
+}
+
+_public_static_opset_(swan_string__ro__static, swan_string__ro);
+_public_explicit_opset_(swan_string__ro__explicit,
+                        &_swan_string__ro__opset, sizeof(size_t));

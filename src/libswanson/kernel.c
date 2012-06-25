@@ -15,5 +15,6 @@
 #include "kernel/01-static.c.in"
 
 #include "kernel/10-size.c.in"
+#include "kernel/10-string.c.in"
 
 #include "kernel/99-kernel.c.in"

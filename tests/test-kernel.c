@@ -153,6 +153,27 @@ END_TEST
 
 
 /*-----------------------------------------------------------------------
+ * Strings
+ */
+
+START_TEST(test__string__operations)
+{
+    DESCRIBE_TEST;
+
+    check_operation(opset, swan_string__ro__static__opset(), "~alias");
+    check_operation(opset, swan_string__ro__static__opset(), "~unref");
+    check_operation(opset, swan_string__ro__static__opset(), "print");
+    check_unknown_operation(opset, swan_string__ro__static__opset());
+
+    check_operation(opset, swan_string__ro__explicit__opset(), "~alloc");
+    check_operation(opset, swan_string__ro__explicit__opset(), "~unref");
+    check_operation(opset, swan_string__ro__explicit__opset(), "print");
+    check_unknown_operation(opset, swan_string__ro__explicit__opset());
+}
+END_TEST
+
+
+/*-----------------------------------------------------------------------
  * The kernel
  */
 
@@ -186,6 +207,10 @@ test_suite()
     tcase_add_test(tc_size, test__size__assign);
     tcase_add_test(tc_size, test__size__assign_add);
     suite_add_tcase(s, tc_size);
+
+    TCase  *tc_string = tcase_create("string");
+    tcase_add_test(tc_string, test__string__operations);
+    suite_add_tcase(s, tc_string);
 
     TCase  *tc_kernel = tcase_create("kernel");
     tcase_add_test(tc_kernel, test__kernel__operations);
