@@ -13,12 +13,16 @@
 
 #include <libcork/cli.h>
 
+#include "s0.h"
+
 
 /*-----------------------------------------------------------------------
  * Command list
  */
 
-static struct cork_command  *subcommands[] = { NULL };
+static struct cork_command  *subcommands[] = {
+    &s0_command
+};
 
 static struct cork_command  root_command =
     cork_command_set("swan", NULL, NULL, subcommands);

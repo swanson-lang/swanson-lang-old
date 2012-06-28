@@ -14,6 +14,7 @@ include_directories(../include)
 
 set(LIBSWANSON_SRC
     libswanson/kernel.c
+    libswanson/s0-parser.c
 )
 
 add_library(libswanson SHARED ${LIBSWANSON_SRC})
@@ -30,6 +31,7 @@ install(TARGETS libswanson DESTINATION lib)
 # Build the command-line programs
 
 set(SWAN_SRC
+    swan/s0.c
     swan/swan.c
 )
 

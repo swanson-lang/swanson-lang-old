@@ -8,13 +8,11 @@
  * ----------------------------------------------------------------------
  */
 
-#ifndef SWANSON_H
-#define SWANSON_H
+#ifndef SWAN_S0_H
+#define SWAN_S0_H
 
-/* Include all of the parts */
-#include <swanson/error.h>
-#include <swanson/kernel.h>
-#include <swanson/metamodel.h>
-#include <swanson/s0.h>
 
-#endif /* SWANSON_H */
+extern struct cork_command  s0_command;
+
+
+#endif /* SWAN_S0_H */
