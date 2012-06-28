@@ -139,9 +139,9 @@ print_quoted_string(const char *str)
 }
 
 static int
-swan_s0_verify_operation_call(struct swan_s0_callback *callback,
-                              const char *target, const char *operation_name,
-                              size_t param_count, const char **params)
+swan_s0_verify__operation_call(struct swan_s0_callback *callback,
+                               const char *target, const char *operation_name,
+                               size_t param_count, const char **params)
 {
     bool  first;
     size_t  i;
@@ -166,9 +166,9 @@ swan_s0_verify_operation_call(struct swan_s0_callback *callback,
 }
 
 static int
-swan_s0_verify_string_constant(struct swan_s0_callback *callback,
-                               const char *result, const char *contents,
-                               size_t content_length)
+swan_s0_verify__string_constant(struct swan_s0_callback *callback,
+                                const char *result, const char *contents,
+                                size_t content_length)
 {
     printf("{ \"type\": \"string_constant\", \"result\": ");
     print_quoted_string(result);
@@ -178,9 +178,16 @@ swan_s0_verify_string_constant(struct swan_s0_callback *callback,
     return 0;
 }
 
+static int
+swan_s0_verify__finish(struct swan_s0_callback *callback)
+{
+    return 0;
+}
+
 static struct swan_s0_callback  swan_s0_verify_callback = {
-    swan_s0_verify_operation_call,
-    swan_s0_verify_string_constant
+    swan_s0_verify__operation_call,
+    swan_s0_verify__string_constant,
+    swan_s0_verify__finish
 };
 
 static void

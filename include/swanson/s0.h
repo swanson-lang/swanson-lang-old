@@ -31,6 +31,9 @@ struct swan_s0_callback {
     (*string_constant)(struct swan_s0_callback *callback,
                        const char *result, const char *contents,
                        size_t content_length);
+
+    int
+    (*finish)(struct swan_s0_callback *callback);
 };
 
 
@@ -50,12 +53,21 @@ struct swan_scope {
 struct swan_scope *
 swan_scope_new(const char *name);
 
+int
+swan_scope_check_values(struct swan_scope *scope);
+
 void
 swan_scope_free(struct swan_scope *scope);
 
+/* S0 code is responsible for unref-ing value */
 void
 swan_scope_add(struct swan_scope *scope, const char *name,
                struct swan_value *value);
+
+/* Scope is responsible for unref-ing value */
+void
+swan_scope_add_predefined(struct swan_scope *scope, const char *name,
+                          struct swan_value *value);
 
 void
 swan_scope_get(struct swan_scope *self, const char *name,

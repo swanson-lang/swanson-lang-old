@@ -37,9 +37,9 @@ struct swan_s0_evaluator_internal {
 };
 
 static int
-swan_s0_evaluate_operation_call(struct swan_s0_callback *callback,
-                                const char *target, const char *operation_name,
-                                size_t param_count, const char **params)
+swan_s0_evaluate__operation_call(struct swan_s0_callback *callback,
+                                 const char *target, const char *operation_name,
+                                 size_t param_count, const char **params)
 {
     size_t  i;
     struct swan_s0_evaluator_internal  *eval = cork_container_of
@@ -79,9 +79,9 @@ swan_s0_evaluate_operation_call(struct swan_s0_callback *callback,
 }
 
 static int
-swan_s0_evaluate_string_constant(struct swan_s0_callback *callback,
-                                 const char *result, const char *contents,
-                                 size_t content_length)
+swan_s0_evaluate__string_constant(struct swan_s0_callback *callback,
+                                  const char *result, const char *contents,
+                                  size_t content_length)
 {
     struct swan_s0_evaluator_internal  *eval = cork_container_of
         (callback, struct swan_s0_evaluator_internal, public.callback);
@@ -91,13 +91,22 @@ swan_s0_evaluate_string_constant(struct swan_s0_callback *callback,
     return 0;
 }
 
+static int
+swan_s0_evaluate__finish(struct swan_s0_callback *callback)
+{
+    struct swan_s0_evaluator_internal  *eval = cork_container_of
+        (callback, struct swan_s0_evaluator_internal, public.callback);
+    return swan_scope_check_values(eval->public.scope);
+}
+
 struct swan_s0_evaluator *
 swan_s0_evaluator_new_empty(const char *scope_name)
 {
     struct swan_s0_evaluator_internal  *self =
         cork_new(struct swan_s0_evaluator_internal);
-    self->public.callback.operation_call = swan_s0_evaluate_operation_call;
-    self->public.callback.string_constant = swan_s0_evaluate_string_constant;
+    self->public.callback.operation_call = swan_s0_evaluate__operation_call;
+    self->public.callback.string_constant = swan_s0_evaluate__string_constant;
+    self->public.callback.finish = swan_s0_evaluate__finish;
     self->public.scope = swan_scope_new(scope_name);
     cork_array_init(&self->params);
     return &self->public;
@@ -109,7 +118,7 @@ swan_s0_evaluator_new_kernel(void)
     struct swan_value  kernel = SWAN_VALUE_EMPTY;
     struct swan_s0_evaluator  *self = swan_s0_evaluator_new_empty("globals");
     swan_kernel_get(&kernel);
-    swan_scope_add(self->scope, "kernel", &kernel);
+    swan_scope_add_predefined(self->scope, "kernel", &kernel);
     return self;
 }
 
