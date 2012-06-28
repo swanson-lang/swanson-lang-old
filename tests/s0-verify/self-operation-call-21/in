@@ -1,0 +1,1 @@
+result1, result2 = target:operation(param1);

@@ -296,8 +296,15 @@ swan_parse_result_list(struct buf *buf)
             id = new_buffer(buf);
             rii_check(swan_parse_identifier(buf, id));
             buf->target = id->buf;
-            rii_check(swan_require_token(buf, '.'));
-            return swan_parse_operation_call(buf);
+            token = swan_get_token(buf);
+            if (token == '.') {
+                return swan_parse_operation_call(buf);
+            } else if (token == ':') {
+                cork_array_append(&buf->params, id->buf);
+                return swan_parse_operation_call(buf);
+            } else {
+                PARSE_ERROR("Expected \".\" or \":\"");
+            }
         } else if (token != ',') {
             PARSE_ERROR("Expected \",\" or \"=\"");
         }
@@ -325,14 +332,27 @@ swan_parse_one_result(struct buf *buf)
             /* It's a operation call */
             buf->target = id->buf;
             return swan_parse_operation_call(buf);
+        } else if (token == ':') {
+            /* It's a operation call with an implicit "self" parameter */
+            buf->target = id->buf;
+            cork_array_append(&buf->params, id->buf);
+            return swan_parse_operation_call(buf);
         } else {
-            PARSE_ERROR("Expected \".\" or \";\"");
+            PARSE_ERROR("Expected \".\", \":\", or \";\"");
         }
     } else if (IS_ALPHA(token)) {
         struct cork_buffer  *id = new_buffer(buf);
         rii_check(swan_parse_id_token(buf, id));
         buf->target = id->buf;
-        rii_check(swan_require_token(buf, '.'));
+        token = swan_get_token(buf);
+        if (token == '.') {
+            return swan_parse_operation_call(buf);
+        } else if (token == ':') {
+            cork_array_append(&buf->params, id->buf);
+            return swan_parse_operation_call(buf);
+        } else {
+            PARSE_ERROR("Expected \".\" or \":\"");
+        }
         return swan_parse_operation_call(buf);
     } else {
         PARSE_ERROR("Expected identifier or string constant");
@@ -373,8 +393,15 @@ swan_parse_statement(struct buf *buf)
         DEBUG("--- No results\n");
         buf->target = id->buf;
         return swan_parse_operation_call(buf);
+    } else if (token == ':') {
+        /* We've got zero results for a operation call, and an implicit "self"
+         * parameter. */
+        DEBUG("--- No results, with self parameter\n");
+        buf->target = id->buf;
+        cork_array_append(&buf->params, id->buf);
+        return swan_parse_operation_call(buf);
     } else {
-        PARSE_ERROR("Expected \"=\", \".\", or \",\"");
+        PARSE_ERROR("Expected \"=\", \".\", \":\", or \",\"");
     }
 }
 
