@@ -17,14 +17,16 @@
 #include "swanson/metamodel.h"
 
 
-_declare_explicit_opset_(swan_size__explicit);
+_declare_explicit_opset_(swan_size__rw__explicit);
 
 void
 swan_size_new(struct swan_value *dest, size_t value)
 {
-    size_t  *content = cork_new(size_t);
+    size_t  *content;
+    assert(swan_value_is_empty(dest));
+    content = cork_new(size_t);
     *content = value;
-    dest->opset = explicit_opset(swan_size__explicit);
+    dest->opset = explicit_opset(swan_size__rw__explicit);
     dest->content = content;
 }
 
@@ -46,16 +48,47 @@ _static_op_(swan_size, add)
     return 0;
 }
 
-_simple_opset_(swan_size__base)
+_simple_opset_(swan_size__ro)
 {
     get_static_op("+", swan_size, add);
     get_static_op("print", swan_size, print);
     return NULL;
 }
 
-_public_static_opset_(swan_size__static, swan_size__base);
-_public_explicit_opset_(swan_size__explicit,
-                        &_swan_size__base__opset, sizeof(size_t));
+_public_static_opset_(swan_size__ro__static, swan_size__ro);
+_public_explicit_opset_(swan_size__ro__explicit,
+                        &_swan_size__ro__opset, sizeof(size_t));
+
+
+_static_op_(swan_size, assign)
+{
+    assert(param_count == 2);
+    size_t  *self = params[0].content;
+    size_t  *src = params[1].content;
+    *self = *src;
+    return 0;
+}
+
+_static_op_(swan_size, assign_add)
+{
+    assert(param_count == 2);
+    size_t  *self = params[0].content;
+    size_t  *src = params[1].content;
+    *self += *src;
+    return 0;
+}
+
+_simple_opset_(swan_size__rw)
+{
+    try_get_operation(swan_size__ro);
+    get_static_op("=", swan_size, assign);
+    get_static_op("+=", swan_size, assign_add);
+    return NULL;
+}
+
+_public_static_opset_(swan_size__rw__static, swan_size__rw);
+_public_explicit_opset_(swan_size__rw__explicit,
+                        &_swan_size__rw__opset, sizeof(size_t));
 
 
 #define builtin_sizes(_) \
@@ -73,7 +106,7 @@ _public_explicit_opset_(swan_size__explicit,
 #define sizeof_op(name, c_type) \
 static const size_t  swan_kernel_sizeof__##name = sizeof(c_type); \
 _constant_op_(swan_kernel_sizeof, name, \
-              &_swan_size__static__opset, \
+              &_swan_size__ro__static__opset, \
               (size_t *) &swan_kernel_sizeof__##name); \
 
 builtin_sizes(sizeof_op);
