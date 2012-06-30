@@ -15,5 +15,6 @@
 #include <swanson/error.h>
 #include <swanson/kernel.h>
 #include <swanson/metamodel.h>
+#include <swanson/s0.h>
 
 #endif /* SWANSON_H */

@@ -389,6 +389,158 @@ management operations <memory-management>` in different ways.
 
 
 
+.. _s0-parsing:
+
+S₀ parsing
+----------
+
+We provide a parser for the S₀ language that is implemented in C.  The parser is
+based on callbacks; you provide a set of callback functions that are called
+whenever different syntactic elements are encountered.
+
+.. function:: int swan_s0_parse(const char \*buf, size_t length, struct swan_s0_callback \*callback)
+
+   Parse a block of S₀ code from the buffer *buf*, which contains *length*
+   bytes.  The *callback* instance is used to define what behavior should be
+   executed when each syntactic element is encountered.
+
+
+.. type:: struct swan_s0_callback
+
+   .. member:: int (\*operation_call)(struct swan_s0_callback \*callback, const char \*target, const char \*operation_name, size_t param_count, const char \*\*params)
+
+      Called when an S₀ operation call is encountered.  *target* is the name of
+      the value whose operation set contains the operation to be called.
+      *operation_name* is the name of the operation.  *param_count* and *params*
+      provide the list of values that are passed in as actual parameters to the
+      operation.
+
+   .. member:: int (\*string_constnat)(struct swan_s0_callback \*callback, const char \*result, const char \*contents, size_t content_length)
+
+      Called when an S₀ string constant is encountered.  *contents* and
+      *content_length* give the content of the string constant.  *result* is the
+      name of a value to store the string constant into.
+
+   .. member:: int (\*finish)(struct swan_s0_callback \*callback)
+
+      Called when the end of the block of S₀ code is encountered.  This callback
+      can be used for any checks that can't be performed until all of the code
+      in the block has been processed.
+
+
+
+.. _s0-evaluation:
+
+S₀ evaluation
+-------------
+
+The functions in this section implement the basic, "primordial" evaluation
+strategy for S₀ code.  The semantics of this evaluation match up with what's
+defined in the :ref:`S₀ language reference <s0>`.
+
+Scopes
+~~~~~~
+
+The *scope* object is the main bookkeeping object that we need when evaluating
+S₀ code.  Each S₀ statement consumes and produces a set of Swanson values.
+Within the S₀ code, the values are given names.  S₀ does not have any complex
+scoping rules; each block of S₀ code has a flat namespace of objects that is
+works with.  In addition to the objects that are created by the code within the
+block, you can also provide a set of *predefined values* that are added to the
+block's scope when the block is created.  Higher level code generation logic can
+simulate closures, dynamic scoping, and lexical scoping by constructing S₀
+blocks and setting predefined values in different ways.
+
+.. type:: struct swan_scope
+
+   Contains the named set of values that a block of S₀ code works with.
+
+   .. member:: const char \*name
+
+      The name of this scope.
+
+.. function:: struct swan_scope \*swan_scope_new(const char \*name)
+
+   Create a new scope object with the given *name*.
+
+.. function:: void swan_scope_free(struct swan_scope \*scope)
+
+   Free the given scope object.  Any non-empty values that are still in the
+   scope will be unreferenced.
+
+.. function:: int swan_scope_check_values(struct swan_scope \*scope)
+
+   Verify that any values added to the scope using :c:func:`swan_scope_add` have
+   been unreferenced.  Values that were added using
+   :c:func:`swan_scope_add_predefined` do not need to be unreferenced.  (This is
+   how we distinguish between the S₀ code's predefined values, and the values
+   that it creates with operation calls.  The S₀ language requires the second
+   group of values to be unreferenced by the code that creates them.)
+
+.. function:: void swan_scope_add(struct swan_scope \*scope, const char \*name struct swan_value \*value)
+              void swan_scope_add_predefined(struct swan_scope \*scope, const char \*name struct swan_value \*value)
+
+   Add a *value* with the given *name* to the *scope* object.  If there is
+   already a value with this name in the scope, it will be overwritten.  In this
+   case, it is the responsibility of the code that created the new value to
+   unreference the old value before calling this method.  (This is the same
+   delegation of responsibilities for the values passed in to an operation
+   call.)
+
+   We do not create a new reference to the value, so you should consider *value*
+   to be invalid after these functions return.
+
+   The ``_add_predefined`` variant should be used to add the predefined values
+   to the scope object; since the S₀ code associated with the scope did not
+   create these values, the code is not responsible for unreferencing the
+   values.  The ``_add`` variant should be used for values created by the S₀
+   code; these values must be freed by the S₀ code before the block terminates.
+
+.. function:: void swan_scope_get(struct swan_scope \*scope, const char \*name struct swan_value \*dest)
+
+   Retrieve the value with the given *name* in the *scope* object, storing the
+   value into *dest*.  We do not create a new reference to the value.  If there
+   is not value with the given name, *dest* will be filled in with an empty
+   value.
+
+Evaluation
+~~~~~~~~~~
+
+.. type:: struct swan_s0_evaluator
+
+   An object that lets you evaluate a block of S₀ code in terms of a particular
+   scope object.
+
+   .. member:: struct swan_s0_callback  callback
+
+      An :ref:`S₀ parsing callback object <s0-parsing>`.  You can use this
+      callback object with the :c:func:`swan_s0_parse` function to evaluate some
+      S₀ code.
+
+   .. member:: struct swan_scope  \*scope
+
+      The scope object that will be used to evaluate the S₀ code.  You can add
+      predefined values to this scope using :c:func:`swan_scope_add_predefined`
+      before evaluating S₀ code.
+
+.. function:: struct swan_s0_evaluator \*swan_s0_evaluator_new_empty(const char \*scope_name)
+
+   Create a new evaluator object with an initially empty scope.  You must add
+   any predefined values to the :c:member:`~swan_s0_evaluator.scope` object
+   yourself before evaluating any S₀ code with this evaluator.
+
+.. function:: struct swan_s0_evaluator \*swan_s0_evaluator_new_kernel(void)
+
+   Create a new evaluator object that makes the :doc:`Swanson kernel <kernel>`
+   available as a predefined value named ``kernel``.  This evaluator is useful
+   for evaluating the definition of the :doc:`Swanson prelude <prelude>`.
+
+.. function:: void swan_s0_evaluator_free(struct swan_s0_evaluator \*eval)
+
+   Free an evaluator object.
+
+
+
 Errors
 ------
 

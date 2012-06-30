@@ -44,7 +44,7 @@
 
 
 /*-----------------------------------------------------------------------
- * Static memory management methods
+ * Static memory management operations
  */
 
 START_TEST(test__static__operations)
