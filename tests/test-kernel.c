@@ -75,11 +75,6 @@ START_TEST(test__size__operations)
     check_operation(opset, swan_size__ro__explicit__opset(), "print");
     check_unknown_operation(opset, swan_size__ro__explicit__opset());
 
-    check_operation(opset, swan_size__rw__static__opset(), "~alias");
-    check_operation(opset, swan_size__rw__static__opset(), "~unref");
-    check_operation(opset, swan_size__rw__static__opset(), "print");
-    check_unknown_operation(opset, swan_size__rw__static__opset());
-
     check_operation(opset, swan_size__rw__explicit__opset(), "~alloc");
     check_operation(opset, swan_size__rw__explicit__opset(), "~unref");
     check_operation(opset, swan_size__rw__explicit__opset(), "print");

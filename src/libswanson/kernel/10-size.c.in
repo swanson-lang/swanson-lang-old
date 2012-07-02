@@ -57,7 +57,7 @@ _simple_opset_(swan_size__ro)
 
 _public_static_opset_(swan_size__ro__static, swan_size__ro);
 _public_explicit_opset_(swan_size__ro__explicit,
-                        &_swan_size__ro__opset, sizeof(size_t));
+                        simple_opset(swan_size__ro), sizeof(size_t));
 
 
 _static_op_(swan_size, assign)
@@ -86,9 +86,8 @@ _simple_opset_(swan_size__rw)
     return NULL;
 }
 
-_public_static_opset_(swan_size__rw__static, swan_size__rw);
 _public_explicit_opset_(swan_size__rw__explicit,
-                        &_swan_size__rw__opset, sizeof(size_t));
+                        simple_opset(swan_size__rw), sizeof(size_t));
 
 
 #define builtin_sizes(_) \
@@ -106,7 +105,7 @@ _public_explicit_opset_(swan_size__rw__explicit,
 #define sizeof_op(name, c_type) \
 static const size_t  swan_kernel_sizeof__##name = sizeof(c_type); \
 _constant_op_(swan_kernel_sizeof, name, \
-              &_swan_size__ro__static__opset, \
+              static_opset(swan_size__ro__static), \
               (size_t *) &swan_kernel_sizeof__##name); \
 
 builtin_sizes(sizeof_op);

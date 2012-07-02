@@ -56,10 +56,6 @@ swan_size__ro__explicit__opset(void);
 
 CORK_ATTR_PURE
 struct swan_opset *
-swan_size__rw__static__opset(void);
-
-CORK_ATTR_PURE
-struct swan_opset *
 swan_size__rw__explicit__opset(void);
 
 void

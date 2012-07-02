@@ -9,7 +9,7 @@
  */
 
 
-_constant_op_(swan_kernel, sizeof, &_swan_kernel_sizeof__opset, NULL);
+_constant_op_(swan_kernel, sizeof, simple_opset(swan_kernel_sizeof), NULL);
 
 _simple_opset_(swan_kernel)
 {

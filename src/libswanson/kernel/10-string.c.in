@@ -49,4 +49,4 @@ _simple_opset_(swan_string__ro)
 
 _public_static_opset_(swan_string__ro__static, swan_string__ro);
 _public_explicit_opset_(swan_string__ro__explicit,
-                        &_swan_string__ro__opset, sizeof(size_t));
+                        simple_opset(swan_string__ro), sizeof(size_t));

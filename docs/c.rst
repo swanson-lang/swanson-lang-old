@@ -60,10 +60,10 @@ is represented by an instance of :c:type:`swan_operation`.
       contain an operation with that name, you should set a
       :c:func:`swan_undefined` error and return ``NULL``.
 
-   .. member:: struct swan_opset \*(\*ref)(struct swan_opset \*opset)
+   .. member:: struct swan_opset \*(\*alias)(struct swan_opset \*opset)
 
       Create a new reference to this operation set.  This is analogous to the
-      :py:meth:`~MemoryManagement.ref` method in our :doc:`memory management
+      :py:meth:`~MemoryManagement.alias` method in our :doc:`memory management
       interface <memory-management>`.
 
    .. member:: void (\*unref)(struct swan_opset \*opset)
@@ -78,7 +78,7 @@ is represented by an instance of :c:type:`swan_operation`.
    contain an operation with that name, we'll raise a :c:func:`swan_undefined`
    error and return ``NULL``.
 
-.. function:: struct swan_opset \*swan_opset_ref(struct swan_opset \*opset)
+.. function:: struct swan_opset \*swan_opset_alias(struct swan_opset \*opset)
 
    Create a new reference to *opset*.
 

@@ -34,7 +34,7 @@ struct swan_opset {
     (*get_operation)(struct swan_opset *opset, const char *name);
 
     struct swan_opset *
-    (*ref)(struct swan_opset *opset);
+    (*alias)(struct swan_opset *opset);
 
     void
     (*unref)(struct swan_opset *opset);
@@ -43,8 +43,8 @@ struct swan_opset {
 #define swan_opset_get_operation(opset, name) \
     ((opset)->get_operation((opset), (name)))
 
-#define swan_opset_ref(opset) \
-    ((opset)->ref((opset)))
+#define swan_opset_alias(opset) \
+    ((opset)->alias((opset)))
 
 #define swan_opset_unref(opset) \
     ((opset)->unref((opset)))

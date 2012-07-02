@@ -31,13 +31,12 @@ struct swan_explicit_opset {
 
 _evaluate_(swan_explicit, alloc)
 {
-    struct swan_explicit_opset  *gopset =
+    struct swan_explicit_opset  *e_opset =
         cork_container_of(operation, struct swan_explicit_opset, alloc);
-
     assert(param_count == 1);
     assert(swan_value_is_empty(&params[0]));
-    params[0].content = cork_calloc(1, gopset->instance_size);
-    params[0].opset = swan_opset_ref(gopset->base);
+    params[0].content = cork_calloc(1, e_opset->instance_size);
+    params[0].opset = swan_opset_alias(e_opset->base);
     return 0;
 }
 
@@ -52,37 +51,37 @@ _evaluate_(swan_explicit, unref)
 
 _get_operation_(swan_explicit)
 {
-    struct swan_explicit_opset  *gopset =
+    struct swan_explicit_opset  *e_opset =
         cork_container_of(opset, struct swan_explicit_opset, parent);
 
     if (strcmp(op_name, "~alloc") == 0) {
-        return &gopset->alloc;
+        return &e_opset->alloc;
     } else if (strcmp(op_name, "~unref") == 0) {
-        return &gopset->unref;
+        return &e_opset->unref;
     } else {
-        return swan_opset_get_operation(gopset->base, op_name);
+        return swan_opset_get_operation(e_opset->base, op_name);
     }
 }
 
 static struct swan_opset *
-swan_explicit__ref(struct swan_opset *opset)
+swan_explicit__alias(struct swan_opset *opset)
 {
-    struct swan_explicit_opset  *gopset =
+    struct swan_explicit_opset  *e_opset =
         cork_container_of(opset, struct swan_explicit_opset, parent);
-    return cork_gc_incref(gopset);
+    return cork_gc_incref(e_opset);
 }
 
 static void
 swan_explicit__unref(struct swan_opset *opset)
 {
-    struct swan_explicit_opset  *gopset =
+    struct swan_explicit_opset  *e_opset =
         cork_container_of(opset, struct swan_explicit_opset, parent);
-    cork_gc_decref(gopset);
+    cork_gc_decref(e_opset);
 }
 
 _free_(swan_explicit_opset) {
-    struct swan_explicit_opset  *gopset = obj;
-    swan_opset_unref(gopset->base);
+    struct swan_explicit_opset  *e_opset = obj;
+    swan_opset_unref(e_opset->base);
 }
 
 _gc_no_recurse_(swan_explicit_opset);
@@ -90,15 +89,15 @@ _gc_no_recurse_(swan_explicit_opset);
 struct swan_opset *
 swan_explicit_opset_new_from_size(struct swan_opset *base, size_t instance_size)
 {
-    struct swan_explicit_opset  *gopset = cork_gc_new(swan_explicit_opset);
-    gopset->parent.get_operation = swan_explicit__get_operation;
-    gopset->parent.ref = swan_explicit__ref;
-    gopset->parent.unref = swan_explicit__unref;
-    gopset->base = base;
-    gopset->instance_size = instance_size;
-    gopset->alloc.evaluate = swan_explicit__alloc__eval;
-    gopset->unref.evaluate = swan_explicit__unref__eval;
-    return &gopset->parent;
+    struct swan_explicit_opset  *e_opset = cork_gc_new(swan_explicit_opset);
+    e_opset->parent.get_operation = swan_explicit__get_operation;
+    e_opset->parent.alias = swan_explicit__alias;
+    e_opset->parent.unref = swan_explicit__unref;
+    e_opset->base = base;
+    e_opset->instance_size = instance_size;
+    e_opset->alloc.evaluate = eval_func(swan_explicit, alloc);
+    e_opset->unref.evaluate = eval_func(swan_explicit, unref);
+    return &e_opset->parent;
 }
 
 struct swan_opset *
@@ -121,13 +120,13 @@ static struct swan_explicit_opset  _##name##__opset;
 static struct swan_explicit_opset  _##name##__opset = { \
     { \
         swan_explicit__get_operation, \
-        swan_opset__static__ref, \
+        swan_opset__static__alias, \
         swan_opset__static__unref \
     }, \
     base, \
     instance_size, \
-    { swan_explicit__alloc__eval }, \
-    { swan_explicit__unref__eval } \
+    { eval_func(swan_explicit, alloc) }, \
+    { eval_func(swan_explicit, unref) } \
 };
 
 #define explicit_opset(name)  (&_##name##__opset.parent)
