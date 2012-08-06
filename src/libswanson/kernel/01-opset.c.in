@@ -1,0 +1,53 @@
+/* -*- coding: utf-8 -*-
+ * ----------------------------------------------------------------------
+ * Copyright © 2012, RedJack, LLC.
+ * All rights reserved.
+ *
+ * Please see the LICENSE.txt file in this distribution for license
+ * details.
+ * ----------------------------------------------------------------------
+ */
+
+#include <assert.h>
+#include <stdio.h>
+
+#include <libcork/core.h>
+
+#include "swanson/kernel.h"
+#include "swanson/metamodel.h"
+
+
+_static_op_(swan_opset, alias)
+{
+    struct swan_opset  *opset;
+    assert(param_count == 2);
+    opset = params[1].content;
+    params[0] = params[1];
+    swan_opset_alias(opset);
+    return 0;
+}
+
+_static_op_(swan_opset, unref)
+{
+    struct swan_opset  *opset;
+    assert(param_count == 1);
+    opset = params[0].content;
+    swan_opset_unref(opset);
+    swan_value_clear(&params[0]);
+    return 0;
+}
+
+_simple_opset_(swan_opset)
+{
+    get_static_op("~alias", swan_opset, alias);
+    get_static_op("~unref", swan_opset, unref);
+    return NULL;
+}
+
+
+void
+swan_opset_value(struct swan_value *dest, struct swan_opset *opset)
+{
+    dest->opset = simple_opset(swan_opset);
+    dest->content = opset;
+}

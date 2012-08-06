@@ -1,5 +1,12 @@
+size_type = kernel.size;
+alloc = kernel.explicit(size_type);
+size_type:~unref();
+
 sizeof = kernel.sizeof;
+int8 = alloc.alloc();
 int8 = sizeof.int8;
 int8:print();
 int8:~unref();
 sizeof:~unref();
+
+alloc:~unref();

@@ -12,82 +12,61 @@
 #include <stdio.h>
 
 #include <libcork/core.h>
+#include <libcork/helpers/errors.h>
 
 #include "swanson/kernel.h"
 #include "swanson/metamodel.h"
 
 
-_declare_explicit_opset_(swan_size__rw__explicit);
-
-void
-swan_size_new(struct swan_value *dest, size_t value)
+_static_op_(swan_size, init)
 {
-    size_t  *content;
-    assert(swan_value_is_empty(dest));
-    content = cork_new(size_t);
-    *content = value;
-    dest->opset = explicit_opset(swan_size__rw__explicit);
-    dest->content = content;
+    assert(param_count == 1);
+    return 0;
 }
 
 _static_op_(swan_size, print)
 {
+    size_t  *self;
     assert(param_count == 1);
-    size_t  *self = params[0].content;
+    rip_check(self = swan_value_get_size(&params[0]));
     printf("%zu\n", *self);
+    return 0;
+}
+
+_static_op_(swan_size, assign)
+{
+    size_t  *self;
+    size_t  *src;
+    assert(param_count == 2);
+    rip_check(self = swan_value_get_size(&params[0]));
+    rip_check(src = swan_value_get_size(&params[1]));
+    *self = *src;
     return 0;
 }
 
 _static_op_(swan_size, add)
 {
+    size_t  *self;
+    size_t  *lhs;
+    size_t  *rhs;
     assert(param_count == 3);
-    assert(swan_value_is_empty(&params[0]));
-    size_t  *lhs = params[1].content;
-    size_t  *rhs = params[2].content;
-    swan_size_new(&params[0], *lhs + *rhs);
+    rip_check(self = swan_value_get_size(&params[0]));
+    rip_check(lhs = swan_value_get_size(&params[1]));
+    rip_check(rhs = swan_value_get_size(&params[2]));
+    *self = *lhs + *rhs;
     return 0;
 }
 
-_simple_opset_(swan_size__ro)
+_simple_opset_(swan_size)
 {
+    get_static_op("=", swan_size, assign);
     get_static_op("+", swan_size, add);
     get_static_op("print", swan_size, print);
     return NULL;
 }
 
-_public_static_opset_(swan_size__ro__static, swan_size__ro);
-_public_explicit_opset_(swan_size__ro__explicit,
-                        simple_opset(swan_size__ro), sizeof(size_t));
+_static_type_(swan_size, simple_opset, sizeof(size_t));
 
-
-_static_op_(swan_size, assign)
-{
-    assert(param_count == 2);
-    size_t  *self = params[0].content;
-    size_t  *src = params[1].content;
-    *self = *src;
-    return 0;
-}
-
-_static_op_(swan_size, assign_add)
-{
-    assert(param_count == 2);
-    size_t  *self = params[0].content;
-    size_t  *src = params[1].content;
-    *self += *src;
-    return 0;
-}
-
-_simple_opset_(swan_size__rw)
-{
-    try_get_operation(swan_size__ro);
-    get_static_op("=", swan_size, assign);
-    get_static_op("+=", swan_size, assign_add);
-    return NULL;
-}
-
-_public_explicit_opset_(swan_size__rw__explicit,
-                        simple_opset(swan_size__rw), sizeof(size_t));
 
 
 #define builtin_sizes(_) \
@@ -103,10 +82,14 @@ _public_explicit_opset_(swan_size__rw__explicit,
     _(size, size_t) \
 
 #define sizeof_op(name, c_type) \
-static const size_t  swan_kernel_sizeof__##name = sizeof(c_type); \
-_constant_op_(swan_kernel_sizeof, name, \
-              static_opset(swan_size__ro__static), \
-              (size_t *) &swan_kernel_sizeof__##name); \
+_static_op_(swan_kernel_sizeof, name) \
+{ \
+    size_t  *dest; \
+    assert(param_count == 1); \
+    rip_check(dest = swan_value_get_size(&params[0])); \
+    *dest = sizeof(c_type); \
+    return 0; \
+}
 
 builtin_sizes(sizeof_op);
 #undef sizeof_op

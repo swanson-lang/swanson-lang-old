@@ -308,15 +308,11 @@ is defined at compile time.  A large majority of the operation sets in the
 Swanson kernel are simple operation sets.
 
 .. macro:: _simple_opset_(SYMBOL name)
-           _public_simple_opset_(SYMBOL name)
 
    Declare a new "simple" operation set with the given *name*.  The *name*
    should be of the form ``family_extension``.  The names of the operation's
    constituent C objects will be named according the convention described above.
-
-   For both variants, the opset object is declared with ``static`` C linkage.
-   The ``public`` variant *also* defines a public opset function, that can be
-   used in other compilation units to get a pointer to the opset object.
+   The opset object is declared with ``static`` C linkage.
 
    The operations in this set must be defined at compile time.  You define the
    operations by writing an operation lookup function.  This macro should be
@@ -336,56 +332,6 @@ Swanson kernel are simple operation sets.
    Return a :c:type:`swan_opset` object that was declared via
    :c:macro:`_simple_opset_` or :c:macro:`_public_simple_opset_`.  This macro
    only works within the compilation unit that the operation set was defined in.
-
-
-Memory management
-^^^^^^^^^^^^^^^^^
-
-A common idiom in the kernel is to define a "base" operation set for a type, and
-then to provide additional operation sets that implement the :doc:`memory
-management operations <memory-management>` in different ways.
-
-.. rubric:: Static values
-
-.. macro:: _static_opset_(SYMBOL name, SYMBOL base_name)
-           _public_static_opset_(SYMBOL name, SYMBOL base_name)
-
-   Declare a new operation set that works with values that are declared with
-   ``static`` C linkage.  The new operation set will contain all of the
-   operations in the *base_name* operation lookup function, as well as the
-   appropriate memory management operations.
-
-   For both variants, the opset object is declared with ``static`` C linkage.
-   The ``public`` variant *also* defines a public opset function, that can be
-   used in other compilation units to get a pointer to the opset object.
-
-.. macro:: struct swan_opset \*static_opset(SYMBOL name)
-
-   Return a :c:type:`swan_opset` object that was declared via
-   :c:macro:`_static_opset_` or :c:macro:`_public_static_opset_`.  This macro
-   only works within the compilation unit that the operation set was defined in.
-
-
-.. rubric:: Explicit heap management
-
-.. macro:: _explicit_opset_(SYMBOL name, SYMBOL base_name)
-           _public_explicit_opset_(SYMBOL name, SYMBOL base_name)
-
-   Declare a new operation set that works with values that are allocated from
-   the heap and expicitly deallocated.  The new operation set will contain all
-   of the operations in the *base_name* operation lookup function, as well as
-   the appropriate memory management operations.
-
-   For both variants, the opset object is declared with ``static`` C linkage.
-   The ``public`` variant *also* defines a public opset function, that can be
-   used in other compilation units to get a pointer to the opset object.
-
-.. macro:: struct swan_opset \*explicit_opset(SYMBOL name)
-
-   Return a :c:type:`swan_opset` object that was declared via
-   :c:macro:`_explicit_opset_` or :c:macro:`_public_explicit_opset_`.  This
-   macro only works within the compilation unit that the operation set was
-   defined in.
 
 
 

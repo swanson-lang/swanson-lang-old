@@ -17,6 +17,7 @@
 #define SWAN_ERROR  0xef08a1b8
 
 enum swan_error {
+    SWAN_BAD_VALUE,
     SWAN_DANGLING_REFERENCE,
     SWAN_UNDEFINED,
     SWAN_S0_PARSE_ERROR,
@@ -25,6 +26,8 @@ enum swan_error {
 
 #define swan_set_error(code, ...) \
     (cork_error_set(SWAN_ERROR, code, __VA_ARGS__))
+#define swan_bad_value(...) \
+    swan_set_error(SWAN_BAD_VALUE, __VA_ARGS__)
 #define swan_dangling_reference(...) \
     swan_set_error(SWAN_DANGLING_REFERENCE, __VA_ARGS__)
 #define swan_undefined(...) \
