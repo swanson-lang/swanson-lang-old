@@ -9,6 +9,7 @@
  */
 
 #include <libcork/core.h>
+#include <libcork/helpers/errors.h>
 
 #include "swanson/metamodel.h"
 
@@ -29,8 +30,8 @@ _static_op_(swan_type, instance_size)
     struct swan_type  *type;
     size_t  *dest;
     assert(param_count == 2);
+    rip_check(dest = swan_value_to_size(&params[0]));
     type = cork_container_of(params[1].opset, struct swan_type, parent);
-    dest = params[0].content;
     *dest = type->instance_size;
     return 0;
 }

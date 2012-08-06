@@ -31,6 +31,18 @@ swan_kernel_get(struct swan_value *dest);
 void
 swan_opset_value(struct swan_value *dest, struct swan_opset *opset);
 
+#define swan_value_is_opset(value)  ((value)->opset != NULL)
+
+CORK_ATTR_UNUSED
+static inline struct swan_opset *
+swan_value_to_opset(struct swan_value *value)
+{
+    if (CORK_UNLIKELY(value->content == NULL)) {
+        swan_bad_value("Expected an opset, got an empty value");
+    }
+    return value->content;
+}
+
 
 /*-----------------------------------------------------------------------
  * Memory management
@@ -50,7 +62,7 @@ swan_explicit_allocator_new(struct swan_value *dest, struct swan_value *type);
 
 CORK_ATTR_UNUSED
 static inline size_t *
-swan_value_get_size(struct swan_value *value)
+swan_value_to_size(struct swan_value *value)
 {
     if (CORK_UNLIKELY(value->content == NULL)) {
         swan_bad_value("Expected a size, got an empty value");

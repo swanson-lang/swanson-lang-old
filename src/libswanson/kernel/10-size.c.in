@@ -28,7 +28,7 @@ _static_op_(swan_size, print)
 {
     size_t  *self;
     assert(param_count == 1);
-    rip_check(self = swan_value_get_size(&params[0]));
+    rip_check(self = swan_value_to_size(&params[0]));
     printf("%zu\n", *self);
     return 0;
 }
@@ -38,8 +38,8 @@ _static_op_(swan_size, assign)
     size_t  *self;
     size_t  *src;
     assert(param_count == 2);
-    rip_check(self = swan_value_get_size(&params[0]));
-    rip_check(src = swan_value_get_size(&params[1]));
+    rip_check(self = swan_value_to_size(&params[0]));
+    rip_check(src = swan_value_to_size(&params[1]));
     *self = *src;
     return 0;
 }
@@ -50,9 +50,9 @@ _static_op_(swan_size, add)
     size_t  *lhs;
     size_t  *rhs;
     assert(param_count == 3);
-    rip_check(self = swan_value_get_size(&params[0]));
-    rip_check(lhs = swan_value_get_size(&params[1]));
-    rip_check(rhs = swan_value_get_size(&params[2]));
+    rip_check(self = swan_value_to_size(&params[0]));
+    rip_check(lhs = swan_value_to_size(&params[1]));
+    rip_check(rhs = swan_value_to_size(&params[2]));
     *self = *lhs + *rhs;
     return 0;
 }
@@ -68,6 +68,14 @@ _simple_opset_(swan_size)
 _static_type_(swan_size, simple_opset, sizeof(size_t));
 
 
+_simple_opset_(swan_size__static)
+{
+    get_static_op("print", swan_size, print);
+    get_static_op("~alias", swan_static, alias);
+    get_static_op("~unref", swan_static, unref);
+    return NULL;
+}
+
 
 #define builtin_sizes(_) \
     _(int8, int8_t) \
@@ -82,12 +90,13 @@ _static_type_(swan_size, simple_opset, sizeof(size_t));
     _(size, size_t) \
 
 #define sizeof_op(name, c_type) \
+static const size_t  __swan_sizeof_##name = sizeof(c_type); \
 _static_op_(swan_kernel_sizeof, name) \
 { \
-    size_t  *dest; \
     assert(param_count == 1); \
-    rip_check(dest = swan_value_get_size(&params[0])); \
-    *dest = sizeof(c_type); \
+    assert(swan_value_is_empty(&params[0])); \
+    params[0].opset = simple_opset(swan_size__static); \
+    params[0].content = (size_t *) &__swan_sizeof_##name; \
     return 0; \
 }
 

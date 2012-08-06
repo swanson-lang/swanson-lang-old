@@ -334,6 +334,30 @@ Swanson kernel are simple operation sets.
    only works within the compilation unit that the operation set was defined in.
 
 
+Memory management
+^^^^^^^^^^^^^^^^^
+
+A common idiom in the kernel is to define a "base" operation set for a type, and
+then to provide additional operation sets that implement the :doc:`memory
+management operations <memory-management>` in different ways.
+
+.. rubric:: Static values
+
+.. macro:: _static_opset_(SYMBOL name, SYMBOL base_name)
+
+   Declare a new operation set that works with values that are declared with
+   ``static`` C linkage.  The new operation set will contain all of the
+   operations in the *base_name* operation lookup function, as well as the
+   appropriate memory management operations.  The opset object is declared with
+   ``static`` C linkage.
+
+.. macro:: struct swan_opset \*static_opset(SYMBOL name)
+
+   Return a :c:type:`swan_opset` object that was declared via
+   :c:macro:`_static_opset_` or :c:macro:`_public_static_opset_`.  This macro
+   only works within the compilation unit that the operation set was defined in.
+
+
 
 .. _s0-parsing:
 
