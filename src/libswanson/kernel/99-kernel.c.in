@@ -14,6 +14,7 @@ _constant_op_(swan_kernel, sizeof, simple_opset(swan_kernel_sizeof), NULL);
 
 _simple_opset_(swan_kernel)
 {
+    get_static_op("array", swan_kernel, array);
     get_static_op("explicit", swan_kernel, explicit);
     get_static_op("size", swan_kernel, size);
     get_static_op("sizeof", swan_kernel, sizeof);

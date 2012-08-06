@@ -43,6 +43,17 @@ struct swan_opset {
 #define swan_opset_get_operation(opset, name) \
     ((opset)->get_operation((opset), (name)))
 
+CORK_ATTR_UNUSED
+static struct swan_operation *
+swan_opset_require_operation(struct swan_opset *opset, const char *name)
+{
+    struct swan_operation  *op = swan_opset_get_operation(opset, name);
+    if (CORK_UNLIKELY(op == NULL)) {
+        swan_undefined("Opset doesn't contain operation named %s", name);
+    }
+    return op;
+}
+
 #define swan_opset_alias(opset) \
     ((opset)->alias((opset)))
 
@@ -93,6 +104,9 @@ swan_value_evaluate(struct swan_value *value, const char *name,
         return swan_operation_evaluate(op, param_count, params);
     }
 }
+
+#define swan_value_alias(value) \
+    swan_value_evaluate((value), "~alias", 1, (value))
 
 #define swan_value_unref(value) \
     swan_value_evaluate((value), "~unref", 1, (value))

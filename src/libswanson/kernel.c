@@ -20,6 +20,7 @@
 #include "kernel/10-size.c.in"
 #include "kernel/10-string.c.in"
 
+#include "kernel/15-array.c.in"
 #include "kernel/15-explicit.c.in"
 
 #include "kernel/99-kernel.c.in"

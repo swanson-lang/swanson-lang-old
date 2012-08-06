@@ -79,7 +79,8 @@ swan_explicit__alloc__alias(struct swan_opset *opset)
 {
     struct swan_explicit_opset  *e_opset =
         cork_container_of(opset, struct swan_explicit_opset, alloc_opset);
-    return cork_gc_incref(e_opset);
+    cork_gc_incref(e_opset);
+    return opset;
 }
 
 static void
@@ -112,7 +113,8 @@ swan_explicit__value__alias(struct swan_opset *opset)
 {
     struct swan_explicit_opset  *e_opset =
         cork_container_of(opset, struct swan_explicit_opset, value_opset);
-    return cork_gc_incref(e_opset);
+    cork_gc_incref(e_opset);
+    return opset;
 }
 
 static void
@@ -150,15 +152,13 @@ swan_explicit_allocator_new(struct swan_value *dest, struct swan_value *type)
     e_opset->value_opset.unref = swan_explicit__value__unref;
     e_opset->value_unref.evaluate = eval_func(swan_explicit__value, unref);
 
-    values[1].opset = type->opset;
-    values[1].content = type->content;
+    values[1] = *type;
 
     values[0].opset = simple_opset(swan_size);
     values[0].content = &e_opset->instance_size;
     ei_check(swan_value_evaluate(type, "instance_size", 2, values));
 
-    values[0].opset = NULL;
-    values[0].content = NULL;
+    swan_value_clear(&values[0]);
     ei_check(swan_value_evaluate(type, "opset", 2, values));
     e_opset->base_opset = values[0].content;
 
@@ -178,5 +178,6 @@ _static_op_(swan_kernel, explicit)
 {
     assert(param_count == 2);
     assert(swan_value_is_empty(&params[0]));
+    assert(!swan_value_is_empty(&params[1]));
     return swan_explicit_allocator_new(&params[0], &params[1]);
 }

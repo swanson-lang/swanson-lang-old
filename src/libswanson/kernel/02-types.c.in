@@ -40,8 +40,9 @@ _static_op_(swan_type, opset)
 {
     struct swan_type  *type;
     assert(param_count == 2);
+    assert(swan_value_is_empty(&params[0]));
     type = cork_container_of(params[1].opset, struct swan_type, parent);
-    swan_opset_value(&params[0], type->base);
+    swan_opset_value(&params[0], swan_opset_alias(type->base));
     return 0;
 }
 
