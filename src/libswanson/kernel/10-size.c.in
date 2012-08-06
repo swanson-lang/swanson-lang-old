@@ -117,5 +117,7 @@ _simple_opset_(swan_kernel_sizeof)
     get_static_op(#name, swan_kernel_sizeof, name);
     builtin_sizes(sizeof_get);
 #undef sizeof_get
+    get_static_op("~alias", swan_static, alias);
+    get_static_op("~unref", swan_static, unref);
     return NULL;
 }
