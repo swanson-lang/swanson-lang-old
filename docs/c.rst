@@ -60,10 +60,10 @@ is represented by an instance of :c:type:`swan_operation`.
       contain an operation with that name, you should set a
       :c:func:`swan_undefined` error and return ``NULL``.
 
-   .. member:: struct swan_opset \*(\*ref)(struct swan_opset \*opset)
+   .. member:: struct swan_opset \*(\*alias)(struct swan_opset \*opset)
 
       Create a new reference to this operation set.  This is analogous to the
-      :py:meth:`~MemoryManagement.ref` method in our :doc:`memory management
+      :py:meth:`~MemoryManagement.alias` method in our :doc:`memory management
       interface <memory-management>`.
 
    .. member:: void (\*unref)(struct swan_opset \*opset)
@@ -78,7 +78,7 @@ is represented by an instance of :c:type:`swan_operation`.
    contain an operation with that name, we'll raise a :c:func:`swan_undefined`
    error and return ``NULL``.
 
-.. function:: struct swan_opset \*swan_opset_ref(struct swan_opset \*opset)
+.. function:: struct swan_opset \*swan_opset_alias(struct swan_opset \*opset)
 
    Create a new reference to *opset*.
 
@@ -308,15 +308,11 @@ is defined at compile time.  A large majority of the operation sets in the
 Swanson kernel are simple operation sets.
 
 .. macro:: _simple_opset_(SYMBOL name)
-           _public_simple_opset_(SYMBOL name)
 
    Declare a new "simple" operation set with the given *name*.  The *name*
    should be of the form ``family_extension``.  The names of the operation's
    constituent C objects will be named according the convention described above.
-
-   For both variants, the opset object is declared with ``static`` C linkage.
-   The ``public`` variant *also* defines a public opset function, that can be
-   used in other compilation units to get a pointer to the opset object.
+   The opset object is declared with ``static`` C linkage.
 
    The operations in this set must be defined at compile time.  You define the
    operations by writing an operation lookup function.  This macro should be
@@ -348,44 +344,18 @@ management operations <memory-management>` in different ways.
 .. rubric:: Static values
 
 .. macro:: _static_opset_(SYMBOL name, SYMBOL base_name)
-           _public_static_opset_(SYMBOL name, SYMBOL base_name)
 
    Declare a new operation set that works with values that are declared with
    ``static`` C linkage.  The new operation set will contain all of the
    operations in the *base_name* operation lookup function, as well as the
-   appropriate memory management operations.
-
-   For both variants, the opset object is declared with ``static`` C linkage.
-   The ``public`` variant *also* defines a public opset function, that can be
-   used in other compilation units to get a pointer to the opset object.
+   appropriate memory management operations.  The opset object is declared with
+   ``static`` C linkage.
 
 .. macro:: struct swan_opset \*static_opset(SYMBOL name)
 
    Return a :c:type:`swan_opset` object that was declared via
    :c:macro:`_static_opset_` or :c:macro:`_public_static_opset_`.  This macro
    only works within the compilation unit that the operation set was defined in.
-
-
-.. rubric:: Explicit heap management
-
-.. macro:: _explicit_opset_(SYMBOL name, SYMBOL base_name)
-           _public_explicit_opset_(SYMBOL name, SYMBOL base_name)
-
-   Declare a new operation set that works with values that are allocated from
-   the heap and expicitly deallocated.  The new operation set will contain all
-   of the operations in the *base_name* operation lookup function, as well as
-   the appropriate memory management operations.
-
-   For both variants, the opset object is declared with ``static`` C linkage.
-   The ``public`` variant *also* defines a public opset function, that can be
-   used in other compilation units to get a pointer to the opset object.
-
-.. macro:: struct swan_opset \*explicit_opset(SYMBOL name)
-
-   Return a :c:type:`swan_opset` object that was declared via
-   :c:macro:`_explicit_opset_` or :c:macro:`_public_explicit_opset_`.  This
-   macro only works within the compilation unit that the operation set was
-   defined in.
 
 
 

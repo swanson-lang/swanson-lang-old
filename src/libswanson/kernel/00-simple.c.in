@@ -24,7 +24,7 @@ static struct swan_opset  _##name##__opset;
 _get_operation_(name); \
 static struct swan_opset  _##name##__opset = { \
     name##__get_operation, \
-    swan_opset__static__ref, \
+    swan_opset__static__alias, \
     swan_opset__static__unref \
 }; \
 _get_operation_(name)

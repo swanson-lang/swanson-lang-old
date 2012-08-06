@@ -56,7 +56,7 @@ swan_s0_evaluate__operation_call(struct swan_s0_callback *callback,
     }
 
     rip_check(operation =
-              swan_value_get_operation(&target_value, operation_name));
+              swan_value_require_operation(&target_value, operation_name));
     cork_array_ensure_size(&eval->params, param_count);
 
     for (i = 0; i < param_count; i++) {

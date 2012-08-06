@@ -8,23 +8,9 @@
  * ----------------------------------------------------------------------
  */
 
-#include <assert.h>
+#include <libcork/core.h>
 
-#include "swanson/kernel.h"
 #include "swanson/metamodel.h"
+#include "swanson/kernel.h"
 
-
-_static_op_(swan_static, alias)
-{
-    assert(param_count == 2);
-    assert(swan_value_is_empty(&params[1]));
-    params[1] = params[0];
-    return 0;
-}
-
-_static_op_(swan_static, unref)
-{
-    assert(param_count == 1);
-    swan_value_clear(&params[0]);
-    return 0;
-}
+extern struct swan_value  swan_size__type;

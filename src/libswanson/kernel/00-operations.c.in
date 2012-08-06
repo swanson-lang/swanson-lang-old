@@ -24,12 +24,16 @@ static int \
 opset##__##name##__eval(struct swan_operation *operation, size_t param_count, \
                         struct swan_value *params)
 
+#define eval_func(opset, name)  (opset##__##name##__eval)
+
 #define _static_op_(opset, name) \
 _evaluate_(opset, name); \
 static struct swan_operation  opset##__##name##__op = { \
-    opset##__##name##__eval \
+    eval_func(opset, name) \
 }; \
 _evaluate_(opset, name)
+
+#define static_op(opset, name)  (&opset##__##name##__op)
 
 
 #define _constant_op_(_opset, _name, ret_opset, ret_content) \
@@ -41,3 +45,5 @@ _static_op_(_opset, _name) \
     params[0].content = ret_content; \
     return 0; \
 }
+
+#define constant_op(opset, name)  static_op(opset, name)

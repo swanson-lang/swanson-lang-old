@@ -1,0 +1,183 @@
+/* -*- coding: utf-8 -*-
+ * ----------------------------------------------------------------------
+ * Copyright © 2012, RedJack, LLC.
+ * All rights reserved.
+ *
+ * Please see the LICENSE.txt file in this distribution for license
+ * details.
+ * ----------------------------------------------------------------------
+ */
+
+#include <assert.h>
+
+#include <libcork/core.h>
+#include <libcork/helpers/errors.h>
+#include <libcork/helpers/gc.h>
+
+#include "swanson/kernel.h"
+#include "swanson/metamodel.h"
+
+
+/*-----------------------------------------------------------------------
+ * Explicitly allocated values
+ */
+
+struct swan_explicit_opset {
+    struct swan_opset  *base_opset;
+    struct swan_operation  *init;
+    size_t  instance_size;
+
+    struct swan_opset  alloc_opset;
+    struct swan_operation  alloc;
+    struct swan_operation  alloc_alias;
+    struct swan_operation  alloc_unref;
+
+    struct swan_opset  value_opset;
+    struct swan_operation  value_unref;
+};
+
+_evaluate_(swan_explicit__alloc, alloc)
+{
+    struct swan_explicit_opset  *e_opset =
+        cork_container_of(operation, struct swan_explicit_opset, alloc);
+    assert(param_count == 1);
+    assert(swan_value_is_empty(&params[0]));
+    cork_gc_incref(e_opset);
+    params[0].content = cork_calloc(1, e_opset->instance_size);
+    params[0].opset = &e_opset->value_opset;
+    return swan_operation_evaluate(e_opset->init, param_count, params);
+}
+
+_evaluate_(swan_explicit__alloc, alias)
+{
+    assert(param_count == 2);
+    params[0] = params[1];
+    cork_gc_incref(params[0].content);
+    return 0;
+}
+
+_evaluate_(swan_explicit__alloc, unref)
+{
+    assert(param_count == 1);
+    cork_gc_decref(params[0].content);
+    swan_value_clear(&params[0]);
+    return 0;
+}
+
+_get_operation_(swan_explicit__alloc)
+{
+    struct swan_explicit_opset  *e_opset =
+        cork_container_of(opset, struct swan_explicit_opset, alloc_opset);
+    get_op("alloc", &e_opset->alloc);
+    get_op("~alias", &e_opset->alloc_alias);
+    get_op("~unref", &e_opset->alloc_unref);
+    return NULL;
+}
+
+static struct swan_opset *
+swan_explicit__alloc__alias(struct swan_opset *opset)
+{
+    struct swan_explicit_opset  *e_opset =
+        cork_container_of(opset, struct swan_explicit_opset, alloc_opset);
+    cork_gc_incref(e_opset);
+    return opset;
+}
+
+static void
+swan_explicit__alloc__unref(struct swan_opset *opset)
+{
+    struct swan_explicit_opset  *e_opset =
+        cork_container_of(opset, struct swan_explicit_opset, alloc_opset);
+    cork_gc_decref(e_opset);
+}
+
+_evaluate_(swan_explicit__value, unref)
+{
+    assert(param_count == 1);
+    free(params[0].content);
+    cork_gc_decref(params[0].opset);
+    swan_value_clear(&params[0]);
+    return 0;
+}
+
+_get_operation_(swan_explicit__value)
+{
+    struct swan_explicit_opset  *e_opset =
+        cork_container_of(opset, struct swan_explicit_opset, value_opset);
+    get_op("~unref", &e_opset->value_unref);
+    return swan_opset_get_operation(e_opset->base_opset, op_name);
+}
+
+static struct swan_opset *
+swan_explicit__value__alias(struct swan_opset *opset)
+{
+    struct swan_explicit_opset  *e_opset =
+        cork_container_of(opset, struct swan_explicit_opset, value_opset);
+    cork_gc_incref(e_opset);
+    return opset;
+}
+
+static void
+swan_explicit__value__unref(struct swan_opset *opset)
+{
+    struct swan_explicit_opset  *e_opset =
+        cork_container_of(opset, struct swan_explicit_opset, value_opset);
+    cork_gc_decref(e_opset);
+}
+
+_free_(swan_explicit_opset) {
+    struct swan_explicit_opset  *e_opset = obj;
+    if (e_opset->base_opset != NULL) {
+        swan_opset_unref(e_opset->base_opset);
+    }
+}
+
+_gc_no_recurse_(swan_explicit_opset);
+
+int
+swan_explicit_allocator_new(struct swan_value *dest, struct swan_value *type)
+{
+    struct swan_value  values[2];
+    struct swan_explicit_opset  *e_opset = cork_gc_new(swan_explicit_opset);
+
+    e_opset->alloc_opset.get_operation = swan_explicit__alloc__get_operation;
+    e_opset->alloc_opset.alias = swan_explicit__alloc__alias;
+    e_opset->alloc_opset.unref = swan_explicit__alloc__unref;
+    e_opset->alloc.evaluate = eval_func(swan_explicit__alloc, alloc);
+    e_opset->alloc_alias.evaluate = eval_func(swan_explicit__alloc, alias);
+    e_opset->alloc_unref.evaluate = eval_func(swan_explicit__alloc, unref);
+
+    e_opset->value_opset.get_operation = swan_explicit__value__get_operation;
+    e_opset->value_opset.alias = swan_explicit__value__alias;
+    e_opset->value_opset.unref = swan_explicit__value__unref;
+    e_opset->value_unref.evaluate = eval_func(swan_explicit__value, unref);
+
+    values[1] = *type;
+
+    values[0].opset = simple_opset(swan_size);
+    values[0].content = &e_opset->instance_size;
+    ei_check(swan_value_evaluate(type, "instance_size", 2, values));
+
+    swan_value_clear(&values[0]);
+    ei_check(swan_value_evaluate(type, "opset", 2, values));
+    e_opset->base_opset = values[0].content;
+
+    ep_check(e_opset->init = swan_value_require_operation(type, "init"));
+
+    dest->opset = &e_opset->alloc_opset;
+    dest->content = e_opset;
+    return 0;
+
+error:
+    cork_gc_decref(e_opset);
+    return -1;
+}
+
+
+_static_op_(swan_kernel, explicit)
+{
+    assert(param_count == 2);
+    assert(swan_value_is_empty(&params[0]));
+    assert(!swan_value_is_empty(&params[1]));
+    return swan_explicit_allocator_new(&params[0], &params[1]);
+}

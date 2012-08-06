@@ -25,19 +25,31 @@ swan_kernel_get(struct swan_value *dest);
 
 
 /*-----------------------------------------------------------------------
+ * Opsets
+ */
+
+void
+swan_opset_value(struct swan_value *dest, struct swan_opset *opset);
+
+#define swan_value_is_opset(value)  ((value)->opset != NULL)
+
+CORK_ATTR_UNUSED
+static inline struct swan_opset *
+swan_value_to_opset(struct swan_value *value)
+{
+    if (CORK_UNLIKELY(value->content == NULL)) {
+        swan_bad_value("Expected an opset, got an empty value");
+    }
+    return value->content;
+}
+
+
+/*-----------------------------------------------------------------------
  * Memory management
  */
 
-CORK_ATTR_PURE
-struct swan_opset *
-swan_static__opset(void);
-
-struct swan_opset *
-swan_explicit_opset_new(struct swan_opset *base);
-
-struct swan_opset *
-swan_explicit_opset_new_from_size(struct swan_opset *base,
-                                  size_t instance_size);
+int
+swan_explicit_allocator_new(struct swan_value *dest, struct swan_value *type);
 
 
 /*-----------------------------------------------------------------------
@@ -46,25 +58,17 @@ swan_explicit_opset_new_from_size(struct swan_opset *base,
 
 /* size */
 
-CORK_ATTR_PURE
-struct swan_opset *
-swan_size__ro__static__opset(void);
+#define swan_value_is_size(value)  ((value)->opset != NULL)
 
-CORK_ATTR_PURE
-struct swan_opset *
-swan_size__ro__explicit__opset(void);
-
-CORK_ATTR_PURE
-struct swan_opset *
-swan_size__rw__static__opset(void);
-
-CORK_ATTR_PURE
-struct swan_opset *
-swan_size__rw__explicit__opset(void);
-
-void
-swan_size_new(struct swan_value *dest, size_t value);
-
+CORK_ATTR_UNUSED
+static inline size_t *
+swan_value_to_size(struct swan_value *value)
+{
+    if (CORK_UNLIKELY(value->content == NULL)) {
+        swan_bad_value("Expected a size, got an empty value");
+    }
+    return value->content;
+}
 
 /* string */
 
@@ -72,14 +76,6 @@ struct swan_string {
     void  *data;
     size_t  size;
 };
-
-CORK_ATTR_PURE
-struct swan_opset *
-swan_string__ro__static__opset(void);
-
-CORK_ATTR_PURE
-struct swan_opset *
-swan_string__ro__explicit__opset(void);
 
 /* Makes a copy of content */
 void

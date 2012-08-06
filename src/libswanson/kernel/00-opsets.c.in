@@ -28,12 +28,15 @@
         } \
     } while (0)
 
-#define get_static_op(name, opset, c_name) \
+#define get_op(name, operation) \
     do { \
         if (strcmp(op_name, name) == 0) { \
-            return &opset##__##c_name##__op; \
+            return operation; \
         } \
     } while (0)
+
+#define get_static_op(name, opset, c_name) \
+    get_op(name, static_op(opset, c_name))
 
 #define _get_operation_(name) \
 static struct swan_operation * \
@@ -45,7 +48,7 @@ name##__get_operation(struct swan_opset *opset, const char *op_name)
  */
 
 static struct swan_opset *
-swan_opset__static__ref(struct swan_opset *opset)
+swan_opset__static__alias(struct swan_opset *opset)
 {
     /* For static objects, there's nothing to reference. */
     return opset;

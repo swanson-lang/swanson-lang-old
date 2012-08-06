@@ -12,15 +12,44 @@ used to allocate and deallocate values, and to track *aliases* to those values.
 content.)
 
 
-.. class:: MemoryManagement
+.. class:: Type
 
-   .. method:: alloc(dest)
+   .. method:: instance_size
+
+      ::
+
+          dest: → size
+
+      The size of an instance of this type.
+
+   .. method:: opset
+
+      ::
+
+          dest: → opset
+
+      The operation set for instances of this type.
+
+   .. method:: init
+
+      ::
+
+          self: empty → α
+
+      Initialize a new instance of this type.
+
+
+.. class:: Allocator
+
+   .. method:: alloc
 
       ::
 
           dest: → α
+          type: Type
 
-      Allocates a new instance of a value, storing a reference to it in *dest*.
+
+.. class:: MemoryManagement
 
    .. method:: alias(self, dest)
 

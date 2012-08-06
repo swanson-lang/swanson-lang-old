@@ -430,5 +430,10 @@ swan_s0_parse(const char *buf, size_t len, struct swan_s0_callback *callback)
     }
     cork_array_done(&state.buffers);
     cork_array_done(&state.params);
-    return callback->finish(callback);
+
+    if (rc == 0) {
+        return callback->finish(callback);
+    } else {
+        return rc;
+    }
 }

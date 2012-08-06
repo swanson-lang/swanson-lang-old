@@ -34,7 +34,7 @@ struct swan_opset {
     (*get_operation)(struct swan_opset *opset, const char *name);
 
     struct swan_opset *
-    (*ref)(struct swan_opset *opset);
+    (*alias)(struct swan_opset *opset);
 
     void
     (*unref)(struct swan_opset *opset);
@@ -43,8 +43,19 @@ struct swan_opset {
 #define swan_opset_get_operation(opset, name) \
     ((opset)->get_operation((opset), (name)))
 
-#define swan_opset_ref(opset) \
-    ((opset)->ref((opset)))
+CORK_ATTR_UNUSED
+static struct swan_operation *
+swan_opset_require_operation(struct swan_opset *opset, const char *name)
+{
+    struct swan_operation  *op = swan_opset_get_operation(opset, name);
+    if (CORK_UNLIKELY(op == NULL)) {
+        swan_undefined("Opset doesn't contain operation named %s", name);
+    }
+    return op;
+}
+
+#define swan_opset_alias(opset) \
+    ((opset)->alias((opset)))
 
 #define swan_opset_unref(opset) \
     ((opset)->unref((opset)))
@@ -71,18 +82,31 @@ typedef cork_array(struct swan_value)  swan_value_array;
     (swan_opset_get_operation((value)->opset, (op_name)))
 
 CORK_ATTR_UNUSED
-static inline int
-swan_value_evaluate(struct swan_value *value, const char *name,
-                    size_t param_count, struct swan_value *params)
+static inline struct swan_operation *
+swan_value_require_operation(struct swan_value *value, const char *name)
 {
     struct swan_operation  *op = swan_value_get_operation(value, name);
     if (CORK_UNLIKELY(op == NULL)) {
         swan_undefined("Value doesn't contain operation named %s", name);
+    }
+    return op;
+}
+
+CORK_ATTR_UNUSED
+static inline int
+swan_value_evaluate(struct swan_value *value, const char *name,
+                    size_t param_count, struct swan_value *params)
+{
+    struct swan_operation  *op = swan_value_require_operation(value, name);
+    if (CORK_UNLIKELY(op == NULL)) {
         return -1;
     } else {
         return swan_operation_evaluate(op, param_count, params);
     }
 }
+
+#define swan_value_alias(value) \
+    swan_value_evaluate((value), "~alias", 1, (value))
 
 #define swan_value_unref(value) \
     swan_value_evaluate((value), "~unref", 1, (value))

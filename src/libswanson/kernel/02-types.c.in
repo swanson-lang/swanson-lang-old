@@ -1,0 +1,74 @@
+/* -*- coding: utf-8 -*-
+ * ----------------------------------------------------------------------
+ * Copyright © 2012, RedJack, LLC.
+ * All rights reserved.
+ *
+ * Please see the LICENSE.txt file in this distribution for license
+ * details.
+ * ----------------------------------------------------------------------
+ */
+
+#include <libcork/core.h>
+#include <libcork/helpers/errors.h>
+
+#include "swanson/metamodel.h"
+
+
+/*-----------------------------------------------------------------------
+ * Static types
+ */
+
+struct swan_type {
+    struct swan_opset  parent;
+    struct swan_opset  *base;
+    struct swan_operation  *init;
+    size_t  instance_size;
+};
+
+_static_op_(swan_type, instance_size)
+{
+    struct swan_type  *type;
+    size_t  *dest;
+    assert(param_count == 2);
+    rip_check(dest = swan_value_to_size(&params[0]));
+    type = cork_container_of(params[1].opset, struct swan_type, parent);
+    *dest = type->instance_size;
+    return 0;
+}
+
+_static_op_(swan_type, opset)
+{
+    struct swan_type  *type;
+    assert(param_count == 2);
+    assert(swan_value_is_empty(&params[0]));
+    type = cork_container_of(params[1].opset, struct swan_type, parent);
+    swan_opset_value(&params[0], swan_opset_alias(type->base));
+    return 0;
+}
+
+_get_operation_(swan_type)
+{
+    struct swan_type  *type =
+        cork_container_of(opset, struct swan_type, parent);
+    get_static_op("instance_size", swan_type, instance_size);
+    get_static_op("opset", swan_type, opset);
+    get_op("init", type->init);
+    get_static_op("~alias", swan_static, alias);
+    get_static_op("~unref", swan_static, unref);
+    return NULL;
+}
+
+#define _static_type_(name, opset_type, instance_size) \
+static struct swan_type  _##name##__type = { \
+    { \
+        swan_type__get_operation, \
+        swan_opset__static__alias, \
+        swan_opset__static__unref \
+    }, \
+    opset_type(name), \
+    static_op(name, init), \
+    instance_size \
+};
+
+#define static_type(name)  (&_##name##__type.parent)
+

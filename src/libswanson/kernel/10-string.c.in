@@ -18,7 +18,32 @@
 #include "swanson/metamodel.h"
 
 
-_declare_explicit_opset_(swan_string__ro__explicit);
+_static_op_(swan_string, unref)
+{
+    struct swan_string  *self;
+    assert(param_count == 1);
+    self = params[0].content;
+    free(self);
+    swan_value_clear(&params[0]);
+    return 0;
+}
+
+_static_op_(swan_string, print)
+{
+    struct swan_string  *self;
+    assert(param_count == 1);
+    self = params[0].content;
+    printf("%.*s\n", (int) self->size, (char *) self->data);
+    return 0;
+}
+
+_simple_opset_(swan_string)
+{
+    get_static_op("print", swan_string, print);
+    get_static_op("~unref", swan_string, unref);
+    return NULL;
+}
+
 
 void
 swan_string_new(struct swan_value *dest, const void *data, size_t size)
@@ -29,24 +54,6 @@ swan_string_new(struct swan_value *dest, const void *data, size_t size)
     str->data = (void *) (str + 1);
     str->size = size;
     memcpy(str->data, data, size);
-    dest->opset = explicit_opset(swan_string__ro__explicit);
+    dest->opset = simple_opset(swan_string);
     dest->content = str;
 }
-
-_static_op_(swan_string, print)
-{
-    assert(param_count == 1);
-    struct swan_string  *self = params[0].content;
-    printf("%.*s\n", (int) self->size, (char *) self->data);
-    return 0;
-}
-
-_simple_opset_(swan_string__ro)
-{
-    get_static_op("print", swan_string, print);
-    return NULL;
-}
-
-_public_static_opset_(swan_string__ro__static, swan_string__ro);
-_public_explicit_opset_(swan_string__ro__explicit,
-                        &_swan_string__ro__opset, sizeof(size_t));

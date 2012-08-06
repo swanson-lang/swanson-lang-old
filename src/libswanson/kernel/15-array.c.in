@@ -1,0 +1,337 @@
+/* -*- coding: utf-8 -*-
+ * ----------------------------------------------------------------------
+ * Copyright © 2012, RedJack, LLC.
+ * All rights reserved.
+ *
+ * Please see the LICENSE.txt file in this distribution for license
+ * details.
+ * ----------------------------------------------------------------------
+ */
+
+#include <assert.h>
+
+#include <libcork/core.h>
+#include <libcork/helpers/errors.h>
+#include <libcork/helpers/gc.h>
+
+#include "swanson/kernel.h"
+#include "swanson/metamodel.h"
+
+
+/*-----------------------------------------------------------------------
+ * Fixed-size arrays
+ */
+
+/* value content is an array of instance data */
+
+struct swan_fixed_array_type;
+
+struct swan_fixed_array_element_type {
+    size_t  element_offset;
+    struct swan_opset  *element_base_opset;
+
+    struct swan_opset  element_opset;
+    struct swan_operation  return_element;
+
+    struct swan_fixed_array_type  *array_type;
+    struct swan_opset  *array_opset;
+};
+
+struct swan_fixed_array_type {
+    size_t  element_count;
+    size_t  element_size;
+    size_t  full_instance_size;
+    struct swan_opset  *element_base_opset;
+    struct swan_operation  *element_init;
+
+    struct swan_opset  type_opset;
+    struct swan_operation  instance_size;
+    struct swan_operation  opset;
+    struct swan_operation  init;
+
+    struct swan_opset  array_opset;
+    struct swan_operation  claim;
+};
+
+
+/* Opset for the array's elements */
+
+_evaluate_(swan_fixed_array__element, return)
+{
+    struct swan_fixed_array_element_type  *etype =
+        cork_container_of
+        (operation, struct swan_fixed_array_element_type, return_element);
+    assert(param_count == 2);
+    assert(swan_value_is_empty(&params[0]));
+    params[0].opset = etype->array_opset;
+    params[0].content = params[1].content - etype->element_offset;
+    swan_value_clear(&params[1]);
+    return 0;
+}
+
+_get_operation_(swan_fixed_array__element)
+{
+    struct swan_fixed_array_element_type  *etype =
+        cork_container_of
+        (opset, struct swan_fixed_array_element_type, element_opset);
+    get_op("return", &etype->return_element);
+    return swan_opset_get_operation(etype->element_base_opset, op_name);
+}
+
+static struct swan_opset *
+swan_fixed_array__element__opset_alias(struct swan_opset *opset)
+{
+    struct swan_fixed_array_element_type  *self =
+        cork_container_of
+        (opset, struct swan_fixed_array_element_type, element_opset);
+    cork_gc_incref(self->array_type);
+    return opset;
+}
+
+static void
+swan_fixed_array__element__opset_unref(struct swan_opset *opset)
+{
+    struct swan_fixed_array_element_type  *self =
+        cork_container_of
+        (opset, struct swan_fixed_array_element_type, element_opset);
+    cork_gc_decref(self->array_type);
+}
+
+_recurse_(swan_fixed_array_element_type) {
+    struct swan_fixed_array_element_type  *self = obj;
+    recurse(gc, ud, self->array_type);
+}
+
+_free_(swan_fixed_array_element_type) {
+    struct swan_fixed_array_element_type  *self = obj;
+    swan_opset_unref(self->element_base_opset);
+    swan_opset_unref(self->array_opset);
+}
+
+_gc_(swan_fixed_array_element_type);
+
+static struct swan_fixed_array_element_type *
+swan_fixed_array_element_type_new(struct swan_fixed_array_type *type,
+                                  struct swan_opset *array_opset,
+                                  size_t index)
+{
+    struct swan_fixed_array_element_type  *etype =
+        cork_gc_new(swan_fixed_array_element_type);
+    etype->element_offset = index * type->element_size;
+    etype->element_base_opset = swan_opset_alias(type->element_base_opset);
+    etype->element_opset.get_operation =
+        swan_fixed_array__element__get_operation;
+    etype->element_opset.alias = swan_fixed_array__element__opset_alias;
+    etype->element_opset.unref = swan_fixed_array__element__opset_unref;
+    etype->return_element.evaluate =
+        eval_func(swan_fixed_array__element, return);
+    etype->array_type = cork_gc_incref(type);
+    etype->array_opset = swan_opset_alias(array_opset);
+    return etype;
+}
+
+
+/* Opset for the array's type value */
+
+_evaluate_(swan_fixed_array__type, instance_size)
+{
+    struct swan_fixed_array_type  *type = cork_container_of
+        (operation, struct swan_fixed_array_type, instance_size);
+    size_t  *dest;
+    assert(param_count == 2);
+    rip_check(dest = swan_value_to_size(&params[0]));
+    *dest = type->element_count * type->element_size;
+    return 0;
+}
+
+_evaluate_(swan_fixed_array__type, opset)
+{
+    struct swan_fixed_array_type  *type = cork_container_of
+        (operation, struct swan_fixed_array_type, opset);
+    assert(param_count == 2);
+    assert(swan_value_is_empty(&params[0]));
+    cork_gc_incref(type);
+    swan_opset_value(&params[0], &type->array_opset);
+    return 0;
+}
+
+_evaluate_(swan_fixed_array__type, init)
+{
+    struct swan_fixed_array_type  *type = cork_container_of
+        (operation, struct swan_fixed_array_type, init);
+    size_t  i;
+    char  *elements;
+
+    assert(param_count == 1);
+    elements = params[0].content;
+
+    for (i = 0; i < type->element_count; i++) {
+        struct swan_value  element;
+        element.opset = type->element_base_opset;
+        element.content = elements;
+        rii_check(swan_operation_evaluate(type->element_init, 1, &element));
+        elements += type->element_size;
+    }
+    return 0;
+}
+
+_static_op_(swan_fixed_array__type, alias)
+{
+    struct swan_fixed_array_type  *self;
+    assert(param_count == 2);
+    params[0] = params[1];
+    self = params[0].content;
+    cork_gc_incref(self);
+    return 0;
+}
+
+_static_op_(swan_fixed_array__type, unref)
+{
+    struct swan_fixed_array_type  *self;
+    assert(param_count == 1);
+    self = params[0].content;
+    cork_gc_decref(self);
+    swan_value_clear(&params[0]);
+    return 0;
+}
+
+_get_operation_(swan_fixed_array__type)
+{
+    struct swan_fixed_array_type  *type =
+        cork_container_of(opset, struct swan_fixed_array_type, type_opset);
+    get_op("instance_size", &type->instance_size);
+    get_op("opset", &type->opset);
+    get_op("init", &type->init);
+    get_static_op("~alias", swan_fixed_array__type, alias);
+    get_static_op("~unref", swan_fixed_array__type, unref);
+    return NULL;
+}
+
+static struct swan_opset *
+swan_fixed_array__type__opset_alias(struct swan_opset *opset)
+{
+    struct swan_fixed_array_type  *self =
+        cork_container_of(opset, struct swan_fixed_array_type, type_opset);
+    cork_gc_incref(self);
+    return opset;
+}
+
+static void
+swan_fixed_array__type__opset_unref(struct swan_opset *opset)
+{
+    struct swan_fixed_array_type  *self =
+        cork_container_of(opset, struct swan_fixed_array_type, type_opset);
+    cork_gc_decref(self);
+}
+
+
+/* Opset for the array */
+
+_evaluate_(swan_fixed_array__array, claim)
+{
+    struct swan_fixed_array_type  *type = cork_container_of
+        (operation, struct swan_fixed_array_type, claim);
+    struct swan_fixed_array_element_type  *etype;
+    size_t  *index;
+    assert(param_count == 3);
+    assert(swan_value_is_empty(&params[0]));
+    rip_check(index = swan_value_to_size(&params[2]));
+    etype = swan_fixed_array_element_type_new(type, params[1].opset, *index);
+    params[0].opset = &etype->element_opset;
+    params[0].content = params[1].content + etype->element_offset;
+    swan_value_clear(&params[1]);
+    return 0;
+}
+
+_get_operation_(swan_fixed_array__array)
+{
+    struct swan_fixed_array_type  *type =
+        cork_container_of(opset, struct swan_fixed_array_type, array_opset);
+    get_op("claim", &type->claim);
+    return NULL;
+}
+
+static struct swan_opset *
+swan_fixed_array__array__opset_alias(struct swan_opset *opset)
+{
+    struct swan_fixed_array_type  *self =
+        cork_container_of(opset, struct swan_fixed_array_type, array_opset);
+    cork_gc_incref(self);
+    return opset;
+}
+
+static void
+swan_fixed_array__array__opset_unref(struct swan_opset *opset)
+{
+    struct swan_fixed_array_type  *self =
+        cork_container_of(opset, struct swan_fixed_array_type, array_opset);
+    cork_gc_decref(self);
+}
+
+
+_free_(swan_fixed_array_type) {
+    struct swan_fixed_array_type  *self = obj;
+    if (self->element_base_opset != NULL) {
+        swan_opset_unref(self->element_base_opset);
+    }
+}
+
+_gc_no_recurse_(swan_fixed_array_type);
+
+
+int
+swan_fixed_array_type_new(struct swan_value *dest,
+                          struct swan_value *element_type,
+                          size_t element_count)
+{
+    struct swan_value  values[2];
+    struct swan_fixed_array_type  *self = cork_gc_new(swan_fixed_array_type);
+
+    self->type_opset.get_operation = swan_fixed_array__type__get_operation;
+    self->type_opset.alias = swan_fixed_array__type__opset_alias;
+    self->type_opset.unref = swan_fixed_array__type__opset_unref;
+    self->instance_size.evaluate =
+        eval_func(swan_fixed_array__type, instance_size);
+    self->opset.evaluate = eval_func(swan_fixed_array__type, opset);
+    self->init.evaluate = eval_func(swan_fixed_array__type, init);
+
+    self->array_opset.get_operation = swan_fixed_array__array__get_operation;
+    self->array_opset.alias = swan_fixed_array__array__opset_alias;
+    self->array_opset.unref = swan_fixed_array__array__opset_unref;
+    self->claim.evaluate = eval_func(swan_fixed_array__array, claim);
+
+    self->element_count = element_count;
+
+    values[1] = *element_type;
+
+    values[0].opset = simple_opset(swan_size);
+    values[0].content = &self->element_size;
+    ei_check(swan_value_evaluate(element_type, "instance_size", 2, values));
+
+    swan_value_clear(&values[0]);
+    ei_check(swan_value_evaluate(element_type, "opset", 2, values));
+    self->element_base_opset = values[0].content;
+
+    ep_check(self->element_init =
+             swan_value_require_operation(element_type, "init"));
+
+    dest->content = self;
+    dest->opset = &self->type_opset;
+    return 0;
+
+error:
+    cork_gc_decref(self);
+    return -1;
+}
+
+_static_op_(swan_kernel, array)
+{
+    struct swan_value  *element_type;
+    size_t  *element_count;
+
+    assert(param_count == 3);
+    assert(swan_value_is_empty(&params[0]));
+    element_type = &params[1];
+    rip_check(element_count = swan_value_to_size(&params[2]));
+    return swan_fixed_array_type_new(&params[0], element_type, *element_count);
+}

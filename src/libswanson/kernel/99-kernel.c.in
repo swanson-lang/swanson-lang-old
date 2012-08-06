@@ -9,10 +9,14 @@
  */
 
 
-_constant_op_(swan_kernel, sizeof, &_swan_kernel_sizeof__opset, NULL);
+_constant_op_(swan_kernel, size, static_type(swan_size), NULL);
+_constant_op_(swan_kernel, sizeof, simple_opset(swan_kernel_sizeof), NULL);
 
 _simple_opset_(swan_kernel)
 {
+    get_static_op("array", swan_kernel, array);
+    get_static_op("explicit", swan_kernel, explicit);
+    get_static_op("size", swan_kernel, size);
     get_static_op("sizeof", swan_kernel, sizeof);
     return NULL;
 }
