@@ -13,6 +13,17 @@ since most of the "meat" of the prelude will be implemented on top of this core
 kernel in Swanson itself.
 
 
+.. function:: kernel.explicit
+
+   ::
+
+       dest: → Allocator
+       type: type (aliasable)
+
+   Create an :class:`Allocator` for *type* that allocates new instances from the
+   heap.  The new instances will *not* be aliasable.
+
+
 .. class:: kernel.sizeof
 
    .. attribute:: int8
