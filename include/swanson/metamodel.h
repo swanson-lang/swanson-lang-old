@@ -71,13 +71,23 @@ typedef cork_array(struct swan_value)  swan_value_array;
     (swan_opset_get_operation((value)->opset, (op_name)))
 
 CORK_ATTR_UNUSED
-static inline int
-swan_value_evaluate(struct swan_value *value, const char *name,
-                    size_t param_count, struct swan_value *params)
+static inline struct swan_operation *
+swan_value_require_operation(struct swan_value *value, const char *name)
 {
     struct swan_operation  *op = swan_value_get_operation(value, name);
     if (CORK_UNLIKELY(op == NULL)) {
         swan_undefined("Value doesn't contain operation named %s", name);
+    }
+    return op;
+}
+
+CORK_ATTR_UNUSED
+static inline int
+swan_value_evaluate(struct swan_value *value, const char *name,
+                    size_t param_count, struct swan_value *params)
+{
+    struct swan_operation  *op = swan_value_require_operation(value, name);
+    if (CORK_UNLIKELY(op == NULL)) {
         return -1;
     } else {
         return swan_operation_evaluate(op, param_count, params);
