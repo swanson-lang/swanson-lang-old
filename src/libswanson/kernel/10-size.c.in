@@ -24,6 +24,41 @@ _static_op_(swan_size, init)
     return 0;
 }
 
+_static_op_(swan_size, literal)
+{
+    size_t  *self;
+    struct cork_buffer  buf = CORK_BUFFER_INIT();
+    struct swan_string  *src;
+    char  *startptr;
+    char  *endptr = NULL;
+    uint64_t  result;
+
+    assert(param_count == 2);
+    rip_check(self = swan_value_to_size(&params[0]));
+    rip_check(src = swan_value_to_string(&params[1]));
+
+    /* Ensure that src is NUL-terminated */
+    cork_buffer_set(&buf, src->data, src->size);
+
+    /* Parse the string */
+    startptr = buf.buf;
+#if SIZEOF_LONG == 8
+    result = strtoul(startptr, &endptr, 0);
+#else
+    result = strtoull(startptr, &endptr, 0);
+#endif
+    if (*startptr != '\0' && *endptr == '\0') {
+        /* String was valid and non-empty */
+        *self = result;
+        cork_buffer_done(&buf);
+        return 0;
+    } else {
+        swan_bad_value("Invalid size literal \"%s\"", startptr);
+        cork_buffer_done(&buf);
+        return -1;
+    }
+}
+
 _static_op_(swan_size, print)
 {
     size_t  *self;
@@ -62,6 +97,7 @@ _simple_opset_(swan_size)
     get_static_op("=", swan_size, assign);
     get_static_op("+", swan_size, add);
     get_static_op("print", swan_size, print);
+    get_static_op("~literal", swan_size, literal);
     return NULL;
 }
 

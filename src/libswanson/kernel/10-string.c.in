@@ -22,7 +22,7 @@ _static_op_(swan_string, unref)
 {
     struct swan_string  *self;
     assert(param_count == 1);
-    self = params[0].content;
+    rip_check(self = swan_value_to_string(&params[0]));
     free(self);
     swan_value_clear(&params[0]);
     return 0;
@@ -32,7 +32,7 @@ _static_op_(swan_string, print)
 {
     struct swan_string  *self;
     assert(param_count == 1);
-    self = params[0].content;
+    rip_check(self = swan_value_to_string(&params[0]));
     printf("%.*s\n", (int) self->size, (char *) self->data);
     return 0;
 }

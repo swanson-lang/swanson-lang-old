@@ -77,6 +77,18 @@ struct swan_string {
     size_t  size;
 };
 
+#define swan_value_is_string(value)  ((value)->opset != NULL)
+
+CORK_ATTR_UNUSED
+static inline struct swan_string *
+swan_value_to_string(struct swan_value *value)
+{
+    if (CORK_UNLIKELY(value->content == NULL)) {
+        swan_bad_value("Expected a string, got an empty value");
+    }
+    return value->content;
+}
+
 /* Makes a copy of content */
 void
 swan_string_new(struct swan_value *dest, const void *data, size_t size);
