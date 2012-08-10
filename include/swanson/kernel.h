@@ -28,26 +28,14 @@ swan_kernel_get(struct swan_value *dest);
  * Opsets
  */
 
-bool
-swan_value_is_opset(struct swan_value *value);
+/* hash of "opset" */
+#define SWAN_REP_OPSET  0x1ccfa032
+#define swan_value_is_opset(value)  swan_value_is(value, SWAN_REP_OPSET)
+swan_value_define_to(opset, struct swan_opset, SWAN_REP_OPSET,
+                     "Expected an opset");
 
 int
 swan_opset_value(struct swan_value *dest, struct swan_opset *opset);
-
-CORK_ATTR_UNUSED
-static inline struct swan_opset *
-swan_value_to_opset(struct swan_value *value)
-{
-    if (CORK_UNLIKELY(value->content == NULL)) {
-        swan_bad_value("Expected an opset, got an empty value");
-        return NULL;
-    } else if (CORK_UNLIKELY(!swan_value_is_opset(value))) {
-        swan_bad_value("Expected an opset");
-        return NULL;
-    } else {
-        return value->content;
-    }
-}
 
 
 /*-----------------------------------------------------------------------
@@ -61,33 +49,24 @@ struct swan_type {
     struct swan_operation  *set;
 };
 
-bool
-swan_value_is_type(struct swan_value *value);
+/* hash of "type" */
+#define SWAN_REP_TYPE  0x79f23513
+#define swan_value_is_type(value)  swan_value_is(value, SWAN_REP_TYPE)
+swan_value_define_to(type, struct swan_type, SWAN_REP_TYPE,
+                     "Expected an type");
 
 int
 swan_type_new(struct swan_value *dest, size_t instance_size,
               struct swan_operation *init, struct swan_operation *get,
               struct swan_operation *set);
 
-CORK_ATTR_UNUSED
-static inline struct swan_type *
-swan_value_to_type(struct swan_value *value)
-{
-    if (CORK_UNLIKELY(value->content == NULL)) {
-        swan_bad_value("Expected an type, got an empty value");
-        return NULL;
-    } else if (CORK_UNLIKELY(!swan_value_is_type(value))) {
-        swan_bad_value("Expected an type");
-        return NULL;
-    } else {
-        return value->content;
-    }
-}
-
 
 /*-----------------------------------------------------------------------
  * Assignables
  */
+
+/* Assignable value.  You can retrieve the current value of the assignable using
+ * the "*" operation, and set a new value using the "=" operation. */
 
 struct swan_assignable {
     void  *content;
@@ -96,113 +75,76 @@ struct swan_assignable {
     struct swan_operation  *unref;
 };
 
-bool
-swan_value_is_assignable(struct swan_value *value);
-
-CORK_ATTR_UNUSED
-static inline struct swan_assignable *
-swan_value_to_assignable(struct swan_value *value)
-{
-    if (CORK_UNLIKELY(value->content == NULL)) {
-        swan_bad_value("Expected an assignable, got an empty value");
-        return NULL;
-    } else if (CORK_UNLIKELY(!swan_value_is_assignable(value))) {
-        swan_bad_value("Expected an assignable");
-        return NULL;
-    } else {
-        return value->content;
-    }
-}
+/* hash of "assignable" */
+#define SWAN_REP_ASSIGNABLE  0x0666f40c
+#define swan_value_is_assignable(value) \
+    swan_value_is(value, SWAN_REP_ASSIGNABLE)
+swan_value_define_to(assignable, struct swan_assignable, SWAN_REP_ASSIGNABLE,
+                     "Expected an assignable");
 
 int
-swan_assignable_alloc(struct swan_value *dest, struct swan_type *type);
-
-int
-swan_assignable_value(struct swan_value *dest, void *content,
-                      struct swan_operation *get, struct swan_operation *set,
-                      struct swan_operation *unref);
+swan_assignable_new(struct swan_value *dest, struct swan_type *type);
 
 
 /*-----------------------------------------------------------------------
  * Arrays
  */
 
-bool
-swan_value_is_fixed_array(struct swan_value *value);
+struct swan_array {
+    size_t  element_size;
+    size_t  element_count;
 
-CORK_ATTR_UNUSED
-static inline void *
-swan_value_to_fixed_array(struct swan_value *value)
-{
-    if (CORK_UNLIKELY(value->content == NULL)) {
-        swan_bad_value("Expected a fixed-length array, got an empty value");
-        return NULL;
-    } else if (CORK_UNLIKELY(!swan_value_is_fixed_array(value))) {
-        swan_bad_value("Expected a fixed-length array");
-        return NULL;
-    } else {
-        return value->content;
-    }
-}
+    /* We extract these from the type passed into the allocation function. */
+    struct swan_operation  *get;
+    struct swan_operation  *set;
 
-int
-swan_fixed_array_alloc(struct swan_value *dest, struct swan_type *type,
-                       size_t element_count);
+    void  *elements;
+    struct swan_operation  element__unref;
+};
+
+
+/* hash of "array" */
+#define SWAN_REP_ARRAY  0x13513bf2
+#define swan_value_is_array(value)  swan_value_is(value, SWAN_REP_ARRAY)
+swan_value_define_to(array, struct swan_array, SWAN_REP_ARRAY,
+                     "Expected an array");
 
 int
-swan_fixed_array_value(struct swan_value *dest, void *elements,
-                       size_t element_size, size_t element_count,
-                       struct swan_operation *get, struct swan_operation *set);
+swan_fixed_array_new(struct swan_value *dest, struct swan_type *type,
+                     size_t element_count);
 
 
 /*-----------------------------------------------------------------------
- * Built-in types
+ * Sizes
  */
 
-/* size */
-
-bool
-swan_value_is_size(struct swan_value *value);
+/* hash of "size" */
+#define SWAN_REP_SIZE  0xed8917fa
+#define swan_value_is_size(value)  swan_value_is(value, SWAN_REP_SIZE)
+swan_value_define_to(size, size_t, SWAN_REP_SIZE,
+                     "Expected an size");
 
 int
 swan_size_new(struct swan_value *dest, size_t value);
 
-CORK_ATTR_UNUSED
-static inline size_t *
-swan_value_to_size(struct swan_value *value)
-{
-    if (CORK_UNLIKELY(value->content == NULL)) {
-        swan_bad_value("Expected a size, got an empty value");
-        return NULL;
-    } else if (CORK_UNLIKELY(!swan_value_is_size(value))) {
-        swan_bad_value("Expected a size");
-        return NULL;
-    } else {
-        return value->content;
-    }
-}
 
-/* string */
+/*-----------------------------------------------------------------------
+ * Strings
+ */
 
 struct swan_string {
     void  *data;
     size_t  size;
 };
 
-#define swan_value_is_string(value)  ((value)->opset != NULL)
-
-CORK_ATTR_UNUSED
-static inline struct swan_string *
-swan_value_to_string(struct swan_value *value)
-{
-    if (CORK_UNLIKELY(value->content == NULL)) {
-        swan_bad_value("Expected a string, got an empty value");
-    }
-    return value->content;
-}
+/* hash of "string" */
+#define SWAN_REP_STRING  0xad217aab
+#define swan_value_is_string(value)  swan_value_is(value, SWAN_REP_STRING)
+swan_value_define_to(string, struct swan_string, SWAN_REP_STRING,
+                     "Expected an string");
 
 /* Makes a copy of content */
-void
+int
 swan_string_new(struct swan_value *dest, const void *data, size_t size);
 
 

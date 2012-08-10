@@ -22,29 +22,7 @@
  * Fixed-size arrays
  */
 
-struct swan_fixed_array {
-    size_t  element_size;
-    size_t  element_count;
-
-    /* We extract these from the type passed into the allocation function. */
-    struct swan_operation  *get;
-    struct swan_operation  *set;
-
-    void  *elements;
-    struct swan_operation  element__unref;
-};
-
-
-_declare_simple_opset_(swan_fixed_array);
-
-bool
-swan_value_is_fixed_array(struct swan_value *value)
-{
-    return value->opset == simple_opset(swan_fixed_array);
-}
-
-
-_evaluate_(swan_fixed_array__element, unref)
+_evaluate_(swan_array__element, unref)
 {
     assert(param_count == 1);
     rip_check(swan_value_to_assignable(&params[0]));
@@ -53,8 +31,8 @@ _evaluate_(swan_fixed_array__element, unref)
 }
 
 static int
-swan_fixed_array_get_element(struct swan_fixed_array *self,
-                             struct swan_value *dest, size_t index)
+swan_array_get_element(struct swan_array *self, struct swan_value *dest,
+                       size_t index)
 {
     void  *element = self->elements + (self->element_size * index);
     return swan_assignable_value
@@ -62,69 +40,70 @@ swan_fixed_array_get_element(struct swan_fixed_array *self,
 }
 
 
-_static_op_(swan_fixed_array, unref)
+_static_op_(swan_array, unref)
 {
-    struct swan_fixed_array  *self;
+    struct swan_array  *self;
     assert(param_count == 1);
-    rip_check(self = swan_value_to_fixed_array(&params[0]));
+    rip_check(self = swan_value_to_array(&params[0]));
     cork_gc_decref(self);
     swan_value_clear(&params[0]);
     return 0;
 }
 
-_static_op_(swan_fixed_array, get)
+_static_op_(swan_array, get)
 {
-    struct swan_fixed_array  *self;
+    struct swan_array  *self;
     size_t  *index;
     assert(param_count == 3);
     assert(swan_value_is_empty(&params[0]));
-    rip_check(self = swan_value_to_fixed_array(&params[1]));
+    rip_check(self = swan_value_to_array(&params[1]));
     rip_check(index = swan_value_to_size(&params[2]));
-    return swan_fixed_array_get_element(self, &params[0], *index);
+    return swan_array_get_element(self, &params[0], *index);
 }
 
-_simple_opset_(swan_fixed_array)
+_simple_opset_(swan_array)
 {
-    get_static_op("~unref", swan_fixed_array, unref);
-    get_static_op("[]", swan_fixed_array, get);
+    get_static_op("~unref", swan_array, unref);
+    get_static_op("[]", swan_array, get);
     return NULL;
 }
 
 
-_free_(swan_fixed_array)
+_free_(swan_array)
 {
-    struct swan_fixed_array  *self = obj;
+    struct swan_array  *self = obj;
     free(self->elements);
 }
 
-_gc_no_recurse_(swan_fixed_array);
+_gc_no_recurse_(swan_array);
 
 
 int
-swan_fixed_array_value(struct swan_value *dest, void *elements,
-                       size_t element_size, size_t element_count,
-                       struct swan_operation *get, struct swan_operation *set)
+swan_array_value(struct swan_value *dest, void *elements,
+                 size_t element_size, size_t element_count,
+                 struct swan_operation *get, struct swan_operation *set)
 {
-    struct swan_fixed_array  *self = cork_gc_new(swan_fixed_array);
+    struct swan_array  *self = cork_gc_new(swan_array);
     self->element_size = element_size;
     self->element_count = element_count;
     self->get = get;
     self->set = set;
     self->elements = elements;
-    self->element__unref.evaluate = eval_func(swan_fixed_array__element, unref);
-    dest->opset = simple_opset(swan_fixed_array);
+    self->element__unref.evaluate = eval_func(swan_array__element, unref);
+    dest->representation = SWAN_REP_ARRAY;
+    dest->opset = simple_opset(swan_array);
     dest->content = self;
     return 0;
 }
 
 int
-swan_fixed_array_alloc(struct swan_value *dest, struct swan_type *type,
-                       size_t element_count)
+swan_array_alloc(struct swan_value *dest, struct swan_type *type,
+                 size_t element_count)
 {
     size_t  i;
     void  *element;
     void  *elements = cork_calloc(element_count, type->instance_size);
-    rii_check(swan_fixed_array_value
+    rii_check(swan_array_value
               (dest, elements, type->instance_size, element_count,
                type->get, type->set));
 
@@ -152,5 +131,5 @@ _static_op_(swan_kernel, array)
     assert(swan_value_is_empty(&params[0]));
     rip_check(type = swan_value_to_type(&params[1]));
     rip_check(element_count = swan_value_to_size(&params[2]));
-    return swan_fixed_array_alloc(&params[0], type, *element_count);
+    return swan_array_alloc(&params[0], type, *element_count);
 }

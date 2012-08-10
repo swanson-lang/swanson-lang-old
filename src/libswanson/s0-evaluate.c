@@ -86,7 +86,7 @@ swan_s0_evaluate__string_constant(struct swan_s0_callback *callback,
     struct swan_s0_evaluator_internal  *eval = cork_container_of
         (callback, struct swan_s0_evaluator_internal, public.callback);
     struct swan_value  str = SWAN_VALUE_EMPTY;
-    swan_string_new(&str, contents, content_length);
+    rii_check(swan_string_new(&str, contents, content_length));
     swan_scope_add(eval->public.scope, result, &str);
     return 0;
 }

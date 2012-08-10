@@ -45,7 +45,7 @@ _simple_opset_(swan_string)
 }
 
 
-void
+int
 swan_string_new(struct swan_value *dest, const void *data, size_t size)
 {
     struct swan_string  *str;
@@ -54,6 +54,8 @@ swan_string_new(struct swan_value *dest, const void *data, size_t size)
     str->data = (void *) (str + 1);
     str->size = size;
     memcpy(str->data, data, size);
+    dest->representation = SWAN_REP_STRING;
     dest->opset = simple_opset(swan_string);
     dest->content = str;
+    return 0;
 }

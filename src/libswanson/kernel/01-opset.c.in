@@ -18,14 +18,6 @@
 #include "swanson/metamodel.h"
 
 
-_declare_simple_opset_(swan_opset);
-
-bool
-swan_value_is_opset(struct swan_value *value)
-{
-    return value->opset == simple_opset(swan_opset);
-}
-
 _static_op_(swan_opset, alias)
 {
     struct swan_opset  *opset;
@@ -56,6 +48,7 @@ _simple_opset_(swan_opset)
 int
 swan_opset_value(struct swan_value *dest, struct swan_opset *opset)
 {
+    dest->representation = SWAN_REP_OPSET;
     dest->opset = simple_opset(swan_opset);
     dest->content = opset;
     return 0;

@@ -20,17 +20,12 @@
 
 _declare_simple_opset_(swan_size);
 
-bool
-swan_value_is_size(struct swan_value *value)
-{
-    return value->opset == simple_opset(swan_size);
-}
-
 int
 swan_size_new(struct swan_value *dest, size_t value)
 {
     size_t  *content = cork_new(size_t);
     *content = value;
+    dest->representation = SWAN_REP_SIZE;
     dest->opset = simple_opset(swan_size);
     dest->content = content;
     return 0;

@@ -14,30 +14,6 @@
 #include "swanson/metamodel.h"
 
 
-_declare_simple_opset_(swan_type);
-
-bool
-swan_value_is_type(struct swan_value *value)
-{
-    return value->opset == simple_opset(swan_type);
-}
-
-int
-swan_type_new(struct swan_value *dest, size_t instance_size,
-              struct swan_operation *init, struct swan_operation *get,
-              struct swan_operation *set)
-{
-    struct swan_type  *content = cork_new(struct swan_type);
-    content->instance_size = instance_size;
-    content->init = init;
-    content->get = get;
-    content->set = set;
-    dest->opset = simple_opset(swan_type);
-    dest->content = content;
-    return 0;
-}
-
-
 _static_op_(swan_type, unref)
 {
     struct swan_type  *type;
@@ -53,6 +29,24 @@ _simple_opset_(swan_type)
     get_static_op("~unref", swan_type, unref);
     return NULL;
 }
+
+
+int
+swan_type_new(struct swan_value *dest, size_t instance_size,
+              struct swan_operation *init, struct swan_operation *get,
+              struct swan_operation *set)
+{
+    struct swan_type  *content = cork_new(struct swan_type);
+    content->instance_size = instance_size;
+    content->init = init;
+    content->get = get;
+    content->set = set;
+    dest->representation = SWAN_REP_TYPE;
+    dest->opset = simple_opset(swan_type);
+    dest->content = content;
+    return 0;
+}
+
 
 #define _type_(name, instance_size) \
 _static_op_(name, type) \
