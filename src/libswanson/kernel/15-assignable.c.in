@@ -27,7 +27,7 @@ _static_op_(swan_assignable, unref)
     struct swan_assignable  *self;
     assert(param_count == 1);
     rip_check(self = swan_value_to_assignable(&params[0]));
-    rii_check(swan_operation_evaluate(self->unref, param_count, params));
+    free(self->content);
     free(self);
     swan_value_clear(&params[0]);
     return 0;
@@ -60,38 +60,15 @@ _simple_opset_(swan_assignable)
 
 
 int
-swan_assignable_value(struct swan_value *dest, void *content,
-                      struct swan_operation *get, struct swan_operation *set,
-                      struct swan_operation *unref)
+swan_assignable_new(struct swan_value *dest, struct swan_type *type)
 {
     struct swan_assignable  *self = cork_new(struct swan_assignable);
-    self->content = content;
-    self->get = get;
-    self->set = set;
-    self->unref = unref;
+    self->content = cork_malloc(type->instance_size);
+    self->get = type->get;
+    self->set = type->set;
     dest->representation = SWAN_REP_ASSIGNABLE;
     dest->opset = simple_opset(swan_assignable);
     dest->content = self;
-    return 0;
-}
-
-
-_static_op_(swan_assignable, unref_alloc)
-{
-    struct swan_assignable  *self;
-    assert(param_count == 1);
-    rip_check(self = swan_value_to_assignable(&params[0]));
-    free(self->content);
-    return 0;
-}
-
-int
-swan_assignable_alloc(struct swan_value *dest, struct swan_type *type)
-{
-    void  *content = cork_malloc(type->instance_size);
-    rii_check(swan_assignable_value
-              (dest, content, type->get, type->set,
-               static_op(swan_assignable, unref_alloc)));
     return swan_operation_evaluate(type->init, 1, dest);
 }
 
@@ -102,5 +79,5 @@ _static_op_(swan_kernel, assignable)
     assert(param_count == 2);
     assert(swan_value_is_empty(&params[0]));
     rip_check(type = swan_value_to_type(&params[1]));
-    return swan_assignable_alloc(&params[0], type);
+    return swan_assignable_new(&params[0], type);
 }

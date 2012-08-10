@@ -72,7 +72,6 @@ struct swan_assignable {
     void  *content;
     struct swan_operation  *get;
     struct swan_operation  *set;
-    struct swan_operation  *unref;
 };
 
 /* hash of "assignable" */

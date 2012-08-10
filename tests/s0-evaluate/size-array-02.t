@@ -16,8 +16,7 @@
   > value = element:"*"();
   > value:print();
   > value:~unref();
-  > array = element:return();
-  > array:~unref();
+  > element:~unref();
   > _2:~unref();
   > 
   > EOF
