@@ -1,0 +1,118 @@
+/* -*- coding: utf-8 -*-
+ * ----------------------------------------------------------------------
+ * Copyright © 2012, RedJack, LLC.
+ * All rights reserved.
+ *
+ * Please see the LICENSE.txt file in this distribution for license
+ * details.
+ * ----------------------------------------------------------------------
+ */
+
+#include <assert.h>
+
+#include <libcork/core.h>
+#include <libcork/helpers/errors.h>
+#include <libcork/helpers/gc.h>
+
+#include "swanson/kernel.h"
+#include "swanson/metamodel.h"
+
+
+/*-----------------------------------------------------------------------
+ * Assignables
+ */
+
+/* Assignable value.  You can retrieve the current value of the assignable using
+ * the "*" operation, and set a new value using the "=" operation. */
+
+
+_declare_simple_opset_(swan_assignable);
+
+bool
+swan_value_is_assignable(struct swan_value *value)
+{
+    return value->opset == simple_opset(swan_assignable);
+}
+
+
+_static_op_(swan_assignable, unref)
+{
+    struct swan_assignable  *self;
+    assert(param_count == 1);
+    rip_check(self = swan_value_to_assignable(&params[0]));
+    rii_check(swan_operation_evaluate(self->unref, param_count, params));
+    free(self);
+    swan_value_clear(&params[0]);
+    return 0;
+}
+
+_static_op_(swan_assignable, get)
+{
+    struct swan_assignable  *self;
+    assert(param_count == 2);
+    assert(swan_value_is_empty(&params[0]));
+    rip_check(self = swan_value_to_assignable(&params[1]));
+    return swan_operation_evaluate(self->get, param_count, params);
+}
+
+_static_op_(swan_assignable, set)
+{
+    struct swan_assignable  *self;
+    assert(param_count == 2);
+    rip_check(self = swan_value_to_assignable(&params[0]));
+    return swan_operation_evaluate(self->set, param_count, params);
+}
+
+_simple_opset_(swan_assignable)
+{
+    get_static_op("~unref", swan_assignable, unref);
+    get_static_op("*", swan_assignable, get);
+    get_static_op("=", swan_assignable, set);
+    return NULL;
+}
+
+
+int
+swan_assignable_value(struct swan_value *dest, void *content,
+                      struct swan_operation *get, struct swan_operation *set,
+                      struct swan_operation *unref)
+{
+    struct swan_assignable  *self = cork_new(struct swan_assignable);
+    self->content = content;
+    self->get = get;
+    self->set = set;
+    self->unref = unref;
+    dest->opset = simple_opset(swan_assignable);
+    dest->content = self;
+    return 0;
+}
+
+
+_static_op_(swan_assignable, unref_alloc)
+{
+    struct swan_assignable  *self;
+    assert(param_count == 1);
+    rip_check(self = swan_value_to_assignable(&params[0]));
+    free(self->content);
+    return 0;
+}
+
+int
+swan_assignable_alloc(struct swan_value *dest, struct swan_type *type)
+{
+    void  *content = cork_malloc(type->instance_size);
+    rii_check(swan_assignable_value
+              (dest, content, type->get, type->set,
+               static_op(swan_assignable, unref_alloc)));
+    return swan_operation_evaluate(type->init, 1, dest);
+}
+
+
+_static_op_(swan_kernel, assignable)
+{
+    struct swan_type  *type;
+    assert(param_count == 2);
+    assert(swan_value_is_empty(&params[0]));
+    rip_check(type = swan_value_to_type(&params[1]));
+    return swan_assignable_alloc(&params[0], type);
+}

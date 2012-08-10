@@ -18,15 +18,99 @@
 #include "swanson/metamodel.h"
 
 
-_static_op_(swan_size, init)
+_declare_simple_opset_(swan_size);
+
+bool
+swan_value_is_size(struct swan_value *value)
 {
-    assert(param_count == 1);
+    return value->opset == simple_opset(swan_size);
+}
+
+int
+swan_size_new(struct swan_value *dest, size_t value)
+{
+    size_t  *content = cork_new(size_t);
+    *content = value;
+    dest->opset = simple_opset(swan_size);
+    dest->content = content;
     return 0;
 }
 
-_static_op_(swan_size, literal)
+_static_op_(swan_size, unref)
 {
     size_t  *self;
+    assert(param_count == 1);
+    rip_check(self = swan_value_to_size(&params[0]));
+    free(self);
+    swan_value_clear(&params[0]);
+    return 0;
+}
+
+_static_op_(swan_size, print)
+{
+    size_t  *self;
+    assert(param_count == 1);
+    rip_check(self = swan_value_to_size(&params[0]));
+    printf("%zu\n", *self);
+    return 0;
+}
+
+_static_op_(swan_size, add)
+{
+    size_t  *lhs;
+    size_t  *rhs;
+    assert(param_count == 3);
+    assert(swan_value_is_empty(&params[0]));
+    rip_check(lhs = swan_value_to_size(&params[1]));
+    rip_check(rhs = swan_value_to_size(&params[2]));
+    return swan_size_new(&params[0], *lhs + *rhs);
+}
+
+_simple_opset_(swan_size)
+{
+    get_static_op("+", swan_size, add);
+    get_static_op("print", swan_size, print);
+    get_static_op("~unref", swan_size, unref);
+    return NULL;
+}
+
+
+_static_op_(swan_size, init)
+{
+    assert(param_count == 1);
+    rip_check(swan_value_to_assignable(&params[0]));
+    return 0;
+}
+
+_static_op_(swan_size, get)
+{
+    struct swan_assignable  *self;
+    size_t  *content;
+    assert(param_count == 2);
+    assert(swan_value_is_empty(&params[0]));
+    rip_check(self = swan_value_to_assignable(&params[1]));
+    content = self->content;
+    return swan_size_new(&params[0], *content);
+}
+
+_static_op_(swan_size, set)
+{
+    struct swan_assignable  *self;
+    size_t  *content;
+    size_t  *src;
+    assert(param_count == 2);
+    rip_check(self = swan_value_to_assignable(&params[0]));
+    rip_check(src = swan_value_to_size(&params[1]));
+    content = self->content;
+    *content = *src;
+    return 0;
+}
+
+
+_type_(swan_size, sizeof(size_t));
+
+_static_op_(swan_size, literal)
+{
     struct cork_buffer  buf = CORK_BUFFER_INIT();
     struct swan_string  *src;
     char  *startptr;
@@ -34,7 +118,7 @@ _static_op_(swan_size, literal)
     uint64_t  result;
 
     assert(param_count == 2);
-    rip_check(self = swan_value_to_size(&params[0]));
+    assert(swan_value_is_empty(&params[0]));
     rip_check(src = swan_value_to_string(&params[1]));
 
     /* Ensure that src is NUL-terminated */
@@ -49,9 +133,8 @@ _static_op_(swan_size, literal)
 #endif
     if (*startptr != '\0' && *endptr == '\0') {
         /* String was valid and non-empty */
-        *self = result;
         cork_buffer_done(&buf);
-        return 0;
+        return swan_size_new(&params[0], result);
     } else {
         swan_bad_value("Invalid size literal \"%s\"", startptr);
         cork_buffer_done(&buf);
@@ -59,55 +142,10 @@ _static_op_(swan_size, literal)
     }
 }
 
-_static_op_(swan_size, print)
+_simple_opset_(swan_kernel_size)
 {
-    size_t  *self;
-    assert(param_count == 1);
-    rip_check(self = swan_value_to_size(&params[0]));
-    printf("%zu\n", *self);
-    return 0;
-}
-
-_static_op_(swan_size, assign)
-{
-    size_t  *self;
-    size_t  *src;
-    assert(param_count == 2);
-    rip_check(self = swan_value_to_size(&params[0]));
-    rip_check(src = swan_value_to_size(&params[1]));
-    *self = *src;
-    return 0;
-}
-
-_static_op_(swan_size, add)
-{
-    size_t  *self;
-    size_t  *lhs;
-    size_t  *rhs;
-    assert(param_count == 3);
-    rip_check(self = swan_value_to_size(&params[0]));
-    rip_check(lhs = swan_value_to_size(&params[1]));
-    rip_check(rhs = swan_value_to_size(&params[2]));
-    *self = *lhs + *rhs;
-    return 0;
-}
-
-_simple_opset_(swan_size)
-{
-    get_static_op("=", swan_size, assign);
-    get_static_op("+", swan_size, add);
-    get_static_op("print", swan_size, print);
     get_static_op("~literal", swan_size, literal);
-    return NULL;
-}
-
-_static_type_(swan_size, simple_opset, sizeof(size_t));
-
-
-_simple_opset_(swan_size__static)
-{
-    get_static_op("print", swan_size, print);
-    get_static_op("~alias", swan_static, alias);
+    get_static_op("type", swan_size, type);
     get_static_op("~unref", swan_static, unref);
     return NULL;
 }
@@ -126,14 +164,11 @@ _simple_opset_(swan_size__static)
     _(size, size_t) \
 
 #define sizeof_op(name, c_type) \
-static const size_t  __swan_sizeof_##name = sizeof(c_type); \
 _static_op_(swan_kernel_sizeof, name) \
 { \
     assert(param_count == 1); \
     assert(swan_value_is_empty(&params[0])); \
-    params[0].opset = simple_opset(swan_size__static); \
-    params[0].content = (size_t *) &__swan_sizeof_##name; \
-    return 0; \
+    return swan_size_new(&params[0], sizeof(c_type)); \
 }
 
 builtin_sizes(sizeof_op);
@@ -145,7 +180,6 @@ _simple_opset_(swan_kernel_sizeof)
     get_static_op(#name, swan_kernel_sizeof, name);
     builtin_sizes(sizeof_get);
 #undef sizeof_get
-    get_static_op("~alias", swan_static, alias);
     get_static_op("~unref", swan_static, unref);
     return NULL;
 }
