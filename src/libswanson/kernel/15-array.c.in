@@ -22,12 +22,25 @@
  * Fixed-size arrays
  */
 
-_declare_simple_opset_(swan_array);
-
 struct swan_array_element {
     struct swan_assignable  parent;
-    struct swan_array  *array;
+    struct swan_value  array;
 };
+
+struct swan_array_type {
+    struct swan_type  parent;
+
+    struct swan_opset  *base_element_opset;
+    size_t  element_size;
+    size_t  element_count;
+
+    struct swan_opset  element_opset;
+
+    struct swan_opset  array_opset;
+    struct swan_operation  init;
+    struct swan_operation  claim;
+};
+
 
 _static_op_(swan_array__element, unref)
 {
@@ -36,7 +49,7 @@ _static_op_(swan_array__element, unref)
     assert(param_count == 1);
     rip_check(vself = swan_value_to_assignable(&params[0]));
     self = cork_container_of(vself, struct swan_array_element, parent);
-    cork_gc_decref(self->array);
+    swan_value_unref(&self->array);
     free(self);
     swan_value_clear(&params[0]);
     return 0;
@@ -50,106 +63,56 @@ _static_op_(swan_array__element, return)
     assert(swan_value_is_empty(&params[0]));
     rip_check(vself = swan_value_to_assignable(&params[1]));
     self = cork_container_of(vself, struct swan_array_element, parent);
-
-    params[0].representation = SWAN_REP_ARRAY;
-    params[0].opset = simple_opset(swan_array);
-    params[0].content = self->array;
-
+    params[0] = self->array;
     free(self);
     swan_value_clear(&params[1]);
     return 0;
 }
 
-_simple_opset_(swan_array__element)
+_get_operation_(swan_array__element)
 {
+    struct swan_array_type  *self =
+        cork_container_of(opset, struct swan_array_type, element_opset);
     get_static_op("return", swan_array__element, return);
     get_static_op("~unref", swan_array__element, unref);
-    get_static_op("*", swan_assignable, get);
-    get_static_op("=", swan_assignable, set);
-    return NULL;
+    return swan_opset_get_operation(self->base_element_opset, op_name);
 }
 
-
-static int
-swan_array_get_element(struct swan_array *self, struct swan_value *dest,
-                       size_t index)
+static struct swan_opset *
+swan_array__element_alias(struct swan_opset *opset)
 {
-    struct swan_array_element  *element = cork_new(struct swan_array_element);
-    element->parent.content = self->elements + (self->element_size * index);
-    element->parent.get = self->get;
-    element->parent.set = self->set;
-    element->array = self;
-    dest->representation = SWAN_REP_ASSIGNABLE;
-    dest->opset = simple_opset(swan_array__element);
-    dest->content = element;
-    return 0;
+    struct swan_array_type  *self =
+        cork_container_of(opset, struct swan_array_type, element_opset);
+    cork_gc_incref(self);
+    return opset;
 }
 
-
-_static_op_(swan_array, unref)
+static void
+swan_array__element_unref(struct swan_opset *opset)
 {
-    struct swan_array  *self;
-    assert(param_count == 1);
-    rip_check(self = swan_value_to_array(&params[0]));
+    struct swan_array_type  *self =
+        cork_container_of(opset, struct swan_array_type, element_opset);
     cork_gc_decref(self);
-    swan_value_clear(&params[0]);
-    return 0;
-}
-
-_static_op_(swan_array, claim)
-{
-    struct swan_array  *self;
-    size_t  *index;
-    assert(param_count == 3);
-    assert(swan_value_is_empty(&params[0]));
-    rip_check(self = swan_value_to_array(&params[1]));
-    rip_check(index = swan_value_to_size(&params[2]));
-    rii_check(swan_array_get_element(self, &params[0], *index));
-    swan_value_clear(&params[1]);
-    return 0;
-}
-
-_simple_opset_(swan_array)
-{
-    get_static_op("~unref", swan_array, unref);
-    get_static_op("[]", swan_array, claim);
-    return NULL;
 }
 
 
-_free_(swan_array)
+_evaluate_(swan_array, init)
 {
-    struct swan_array  *self = obj;
-    free(self->elements);
-}
-
-_gc_no_recurse_(swan_array);
-
-
-int
-swan_array_new(struct swan_value *dest, struct swan_type *type,
-               size_t element_count)
-{
+    struct swan_assignable  *array;
+    struct swan_array_type  *type;
     size_t  i;
-    struct swan_array  *self = cork_gc_new(swan_array);
 
-    self->element_size = type->instance_size;
-    self->element_count = element_count;
-    self->get = type->get;
-    self->set = type->set;
-    self->elements = cork_calloc(element_count, type->instance_size);
+    assert(param_count == 1);
+    rip_check(array = swan_value_to_assignable(&params[0]));
+    type = cork_container_of(operation, struct swan_array_type, init);
 
-    dest->representation = SWAN_REP_ARRAY;
-    dest->opset = simple_opset(swan_array);
-    dest->content = self;
-
-    for (i = 0; i < element_count; i++) {
+    for (i = 0; i < type->element_count; i++) {
         struct swan_value  values[3];
         swan_value_clear(&values[0]);
-        values[1] = *dest;
+        values[1] = params[0];
         rii_check(swan_size_new(&values[2], i));
-        rii_check(swan_value_evaluate(dest, "[]", 3, values));
-        rii_check(swan_operation_evaluate(type->init, 1, &values[0]));
+        rii_check(swan_value_evaluate(&params[0], "[]", 3, values));
+        rii_check(swan_value_evaluate(&values[0], "init", 1, &values[0]));
         rii_check(swan_value_unref(&values[2]));
 
         values[1] = values[0];
@@ -159,6 +122,114 @@ swan_array_new(struct swan_value *dest, struct swan_type *type,
 
     return 0;
 }
+
+_evaluate_(swan_array, claim)
+{
+    struct swan_assignable  *array;
+    struct swan_array_type  *type;
+    struct swan_array_element  *element;
+    size_t  *index;
+
+    assert(param_count == 3);
+    assert(swan_value_is_empty(&params[0]));
+    rip_check(array = swan_value_to_assignable(&params[1]));
+    type = cork_container_of(operation, struct swan_array_type, claim);
+    rip_check(index = swan_value_to_size(&params[2]));
+
+    element = cork_new(struct swan_array_element);
+    element->parent.content = array->content + (*index * type->element_size);
+    element->array = params[1];
+
+    params[0].representation = SWAN_REP_ASSIGNABLE;
+    params[0].opset = &type->element_opset;
+    params[0].content = element;
+    swan_value_clear(&params[1]);
+
+    return 0;
+}
+
+_get_operation_(swan_array)
+{
+    struct swan_array_type  *self =
+        cork_container_of(opset, struct swan_array_type, array_opset);
+    get_op("init", &self->init);
+    get_op("[]", &self->claim);
+    return NULL;
+}
+
+static struct swan_opset *
+swan_array__array_alias(struct swan_opset *opset)
+{
+    struct swan_array_type  *self =
+        cork_container_of(opset, struct swan_array_type, array_opset);
+    cork_gc_incref(self);
+    return opset;
+}
+
+static void
+swan_array__array_unref(struct swan_opset *opset)
+{
+    struct swan_array_type  *self =
+        cork_container_of(opset, struct swan_array_type, array_opset);
+    cork_gc_decref(self);
+}
+
+
+_static_op_(swan_array__type, unref)
+{
+    struct swan_type  *vself;
+    struct swan_array_type  *self;
+    assert(param_count == 1);
+    rip_check(vself = swan_value_to_type(&params[0]));
+    self = cork_container_of(vself, struct swan_array_type, parent);
+    cork_gc_decref(self);
+    swan_value_clear(&params[0]);
+    return 0;
+}
+
+_simple_opset_(swan_array__type)
+{
+    get_static_op("~unref", swan_array__type, unref);
+    return NULL;
+}
+
+
+_free_(swan_array_type)
+{
+    struct swan_array_type  *self = obj;
+    swan_opset_unref(self->base_element_opset);
+}
+
+_gc_no_recurse_(swan_array_type);
+
+int
+swan_array_type_new(struct swan_value *dest, struct swan_type *element_type,
+                    size_t element_count)
+{
+    struct swan_array_type  *self = cork_gc_new(swan_array_type);
+
+    self->element_opset.get_operation = swan_array__element__get_operation;
+    self->element_opset.alias = swan_array__element_alias;
+    self->element_opset.unref = swan_array__element_unref;
+
+    self->array_opset.get_operation = swan_array__get_operation;
+    self->array_opset.alias = swan_array__array_alias;
+    self->array_opset.unref = swan_array__array_unref;
+    self->init.evaluate = eval_func(swan_array, init);
+    self->claim.evaluate = eval_func(swan_array, claim);
+
+    self->parent.instance_size = element_count * element_type->instance_size;
+    self->parent.opset = &self->array_opset;
+    self->base_element_opset = swan_opset_alias(element_type->opset);
+    self->element_size = element_type->instance_size;
+    self->element_count = element_count;
+
+    dest->representation = SWAN_REP_TYPE;
+    dest->opset = simple_opset(swan_array__type);
+    dest->content = self;
+    return 0;
+}
+
 
 
 _static_op_(swan_kernel, array)
@@ -170,5 +241,5 @@ _static_op_(swan_kernel, array)
     assert(swan_value_is_empty(&params[0]));
     rip_check(type = swan_value_to_type(&params[1]));
     rip_check(element_count = swan_value_to_size(&params[2]));
-    return swan_array_new(&params[0], type, *element_count);
+    return swan_array_type_new(&params[0], type, *element_count);
 }

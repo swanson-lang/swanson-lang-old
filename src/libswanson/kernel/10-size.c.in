@@ -101,8 +101,16 @@ _static_op_(swan_size, set)
     return 0;
 }
 
+_simple_opset_(swan_size__type)
+{
+    get_static_op("init", swan_size, init);
+    get_static_op("*", swan_size, get);
+    get_static_op("=", swan_size, set);
+    return NULL;
+}
 
 _type_(swan_size, sizeof(size_t));
+
 
 _static_op_(swan_size, literal)
 {

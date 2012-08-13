@@ -33,14 +33,11 @@ _simple_opset_(swan_type)
 
 int
 swan_type_new(struct swan_value *dest, size_t instance_size,
-              struct swan_operation *init, struct swan_operation *get,
-              struct swan_operation *set)
+              struct swan_opset *opset)
 {
     struct swan_type  *content = cork_new(struct swan_type);
     content->instance_size = instance_size;
-    content->init = init;
-    content->get = get;
-    content->set = set;
+    content->opset = swan_opset_alias(opset);
     dest->representation = SWAN_REP_TYPE;
     dest->opset = simple_opset(swan_type);
     dest->content = content;
@@ -54,6 +51,5 @@ _static_op_(name, type) \
     assert(param_count == 1); \
     assert(swan_value_is_empty(&params[0])); \
     return swan_type_new \
-        (&params[0], instance_size, static_op(name, init), \
-         static_op(name, get), static_op(name, set)); \
+        (&params[0], instance_size, simple_opset(name##__type)); \
 }

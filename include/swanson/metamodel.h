@@ -54,6 +54,19 @@ swan_opset_require_operation(struct swan_opset *opset, const char *name)
     return op;
 }
 
+CORK_ATTR_UNUSED
+static inline int
+swan_opset_evaluate(struct swan_opset *opset, const char *name,
+                    size_t param_count, struct swan_value *params)
+{
+    struct swan_operation  *op = swan_opset_require_operation(opset, name);
+    if (CORK_UNLIKELY(op == NULL)) {
+        return -1;
+    } else {
+        return swan_operation_evaluate(op, param_count, params);
+    }
+}
+
 #define swan_opset_alias(opset) \
     ((opset)->alias((opset)))
 

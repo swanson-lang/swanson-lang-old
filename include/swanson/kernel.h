@@ -44,9 +44,7 @@ swan_opset_value(struct swan_value *dest, struct swan_opset *opset);
 
 struct swan_type {
     size_t  instance_size;
-    struct swan_operation  *init;
-    struct swan_operation  *get;
-    struct swan_operation  *set;
+    struct swan_opset  *opset;
 };
 
 /* hash of "type" */
@@ -57,22 +55,32 @@ swan_value_define_to(type, struct swan_type, SWAN_REP_TYPE,
 
 int
 swan_type_new(struct swan_value *dest, size_t instance_size,
-              struct swan_operation *init, struct swan_operation *get,
-              struct swan_operation *set);
+              struct swan_opset *opset);
 
 
 /*-----------------------------------------------------------------------
  * Assignables
  */
 
-/* Assignable value.  You can retrieve the current value of the assignable using
- * the "*" operation, and set a new value using the "=" operation. */
+struct swan_allocator {
+    size_t  instance_size;
+    struct swan_opset  *base_opset;
+    struct swan_opset  assignable_opset;
+};
 
 struct swan_assignable {
     void  *content;
-    struct swan_operation  *get;
-    struct swan_operation  *set;
 };
+
+/* hash of "allocator" */
+#define SWAN_REP_ALLOCATOR  0xeb36369d
+#define swan_value_is_allocator(value) \
+    swan_value_is(value, SWAN_REP_ALLOCATOR)
+swan_value_define_to(allocator, struct swan_allocator, SWAN_REP_ALLOCATOR,
+                     "Expected an allocator");
+
+int
+swan_allocator_new(struct swan_value *dest, struct swan_type *type);
 
 /* hash of "assignable" */
 #define SWAN_REP_ASSIGNABLE  0x0666f40c
@@ -81,36 +89,14 @@ struct swan_assignable {
 swan_value_define_to(assignable, struct swan_assignable, SWAN_REP_ASSIGNABLE,
                      "Expected an assignable");
 
-int
-swan_assignable_new(struct swan_value *dest, struct swan_type *type);
-
 
 /*-----------------------------------------------------------------------
  * Arrays
  */
 
-struct swan_array {
-    size_t  element_size;
-    size_t  element_count;
-
-    /* We extract these from the type passed into the allocation function. */
-    struct swan_operation  *get;
-    struct swan_operation  *set;
-
-    void  *elements;
-    struct swan_operation  element__unref;
-};
-
-
-/* hash of "array" */
-#define SWAN_REP_ARRAY  0x13513bf2
-#define swan_value_is_array(value)  swan_value_is(value, SWAN_REP_ARRAY)
-swan_value_define_to(array, struct swan_array, SWAN_REP_ARRAY,
-                     "Expected an array");
-
 int
-swan_fixed_array_new(struct swan_value *dest, struct swan_type *type,
-                     size_t element_count);
+swan_array_type_new(struct swan_value *dest, struct swan_type *element_type,
+                    size_t element_count);
 
 
 /*-----------------------------------------------------------------------

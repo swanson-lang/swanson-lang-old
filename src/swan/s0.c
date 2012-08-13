@@ -277,6 +277,7 @@ swan_s0_evaluate(int argc, char **argv)
 
     swan_s0_evaluator_free(eval);
     cork_buffer_done(&buf);
+    cork_gc_done();
     exit(rc);
 }
 

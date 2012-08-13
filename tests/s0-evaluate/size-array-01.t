@@ -8,7 +8,11 @@
   > _4 = sizeof.int32;
   > sizeof:~unref();
   > 
-  > array = kernel.array(size_type, _4);
+  > array_type = kernel.array(size_type, _4);
+  > alloc = kernel.assignable(array_type);
+  > array = alloc:alloc();
+  > alloc:~unref();
+  > array_type:~unref();
   > size_type:~unref();
   > _4:~unref();
   > 
