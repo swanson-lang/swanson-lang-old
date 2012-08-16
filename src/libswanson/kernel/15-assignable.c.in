@@ -1,0 +1,137 @@
+/* -*- coding: utf-8 -*-
+ * ----------------------------------------------------------------------
+ * Copyright © 2012, RedJack, LLC.
+ * All rights reserved.
+ *
+ * Please see the LICENSE.txt file in this distribution for license
+ * details.
+ * ----------------------------------------------------------------------
+ */
+
+#include <assert.h>
+
+#include <libcork/core.h>
+#include <libcork/helpers/errors.h>
+#include <libcork/helpers/gc.h>
+
+#include "swanson/kernel.h"
+#include "swanson/metamodel.h"
+
+
+/*-----------------------------------------------------------------------
+ * Allocators and assignables
+ */
+
+_static_op_(swan_assignable, unref)
+{
+    struct swan_allocator  *allocator;
+    struct swan_assignable  *self;
+    assert(param_count == 1);
+    rip_check(self = swan_value_to_assignable(&params[0]));
+
+    /* The assignable holds a reference to its allocator. */
+    allocator = cork_container_of
+        (params[0].opset, struct swan_allocator, assignable_opset);
+    cork_gc_decref(allocator);
+
+    /* Then free the assignable itself. */
+    free(self->content);
+    free(self);
+    swan_value_clear(&params[0]);
+    return 0;
+}
+
+_get_operation_(swan_assignable)
+{
+    struct swan_allocator  *self =
+        cork_container_of(opset, struct swan_allocator, assignable_opset);
+    get_static_op("~unref", swan_assignable, unref);
+    return swan_opset_get_operation(self->base_opset, op_name);
+}
+
+static struct swan_opset *
+swan_assignable__opset_alias(struct swan_opset *opset)
+{
+    struct swan_allocator  *self =
+        cork_container_of(opset, struct swan_allocator, assignable_opset);
+    cork_gc_incref(self);
+    return opset;
+}
+
+static void
+swan_assignable__opset_unref(struct swan_opset *opset)
+{
+    struct swan_allocator  *self =
+        cork_container_of(opset, struct swan_allocator, assignable_opset);
+    cork_gc_decref(self);
+}
+
+
+_static_op_(swan_allocator, alloc)
+{
+    struct swan_allocator  *self;
+    struct swan_assignable  *assignable;
+    assert(param_count == 2);
+    assert(swan_value_is_empty(&params[0]));
+    rip_check(self = swan_value_to_allocator(&params[1]));
+    assignable = cork_new(struct swan_assignable);
+    assignable->content = cork_malloc(self->instance_size);
+    /* The assignable needs a reference to the allocator, since that's where its
+     * opset is stored. */
+    cork_gc_incref(self);
+    params[0].representation = SWAN_REP_ASSIGNABLE;
+    params[0].opset = &self->assignable_opset;
+    params[0].content = assignable;
+    return swan_opset_evaluate(self->base_opset, "init", 1, &params[0]);
+}
+
+_static_op_(swan_allocator, unref)
+{
+    struct swan_allocator  *self;
+    assert(param_count == 1);
+    rip_check(self = swan_value_to_allocator(&params[0]));
+    cork_gc_decref(self);
+    swan_value_clear(&params[0]);
+    return 0;
+}
+
+_simple_opset_(swan_allocator)
+{
+    get_static_op("alloc", swan_allocator, alloc);
+    get_static_op("~unref", swan_allocator, unref);
+    return NULL;
+}
+
+
+_free_(swan_allocator)
+{
+    struct swan_allocator  *self = obj;
+    swan_opset_unref(self->base_opset);
+}
+
+_gc_no_recurse_(swan_allocator);
+
+int
+swan_allocator_new(struct swan_value *dest, struct swan_type *type)
+{
+    struct swan_allocator  *self = cork_gc_new(swan_allocator);
+    self->instance_size = type->instance_size;
+    self->base_opset = swan_opset_alias(type->opset);
+    self->assignable_opset.get_operation = swan_assignable__get_operation;
+    self->assignable_opset.alias = swan_assignable__opset_alias;
+    self->assignable_opset.unref = swan_assignable__opset_unref;
+    dest->representation = SWAN_REP_ALLOCATOR;
+    dest->opset = simple_opset(swan_allocator);
+    dest->content = self;
+    return 0;
+}
+
+
+_static_op_(swan_kernel, assignable)
+{
+    struct swan_type  *type;
+    assert(param_count == 2);
+    assert(swan_value_is_empty(&params[0]));
+    rip_check(type = swan_value_to_type(&params[1]));
+    return swan_allocator_new(&params[0], type);
+}

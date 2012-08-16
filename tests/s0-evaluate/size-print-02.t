@@ -1,17 +1,21 @@
   $ swan s0 evaluate <<EOF
-  > size_type = kernel.size;
-  > alloc = kernel.explicit(size_type);
-  > size_type:~unref();
+  > size = kernel.size;
+  > type = size.type;
+  > alloc = kernel.assignable(type);
+  > int8_copy = alloc:alloc();
+  > alloc:~unref();
+  > size:~unref();
+  > type:~unref();
   > 
   > sizeof = kernel.sizeof;
-  > int8_copy = alloc.alloc();
   > int8 = sizeof.int8;
   > int8_copy:"="(int8);
-  > int8_copy:print();
+  > value = int8_copy:"*";
+  > value:print();
   > int8:~unref();
   > int8_copy:~unref();
+  > value:~unref();
   > sizeof:~unref();
   > 
-  > alloc:~unref();
   > EOF
   1

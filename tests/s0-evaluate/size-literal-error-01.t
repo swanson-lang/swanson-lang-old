@@ -1,16 +1,11 @@
   $ swan s0 evaluate <<EOF
-  > size_type = kernel.size;
-  > alloc = kernel.explicit(size_type);
-  > size_type:~unref();
-  > 
+  > size = kernel.size;
   > _lit = "";
-  > size = alloc.alloc();
-  > size:~literal(_lit);
+  > value = size.~literal(_lit);
   > _lit:~unref();
-  > size:print();
+  > value:print();
+  > value:~unref();
   > size:~unref();
-  > 
-  > alloc:~unref();
   > EOF
   Invalid size literal ""
   [1]

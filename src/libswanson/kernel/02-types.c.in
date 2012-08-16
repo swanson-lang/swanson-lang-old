@@ -14,61 +14,42 @@
 #include "swanson/metamodel.h"
 
 
-/*-----------------------------------------------------------------------
- * Static types
- */
-
-struct swan_type {
-    struct swan_opset  parent;
-    struct swan_opset  *base;
-    struct swan_operation  *init;
-    size_t  instance_size;
-};
-
-_static_op_(swan_type, instance_size)
+_static_op_(swan_type, unref)
 {
     struct swan_type  *type;
-    size_t  *dest;
-    assert(param_count == 2);
-    rip_check(dest = swan_value_to_size(&params[0]));
-    type = cork_container_of(params[1].opset, struct swan_type, parent);
-    *dest = type->instance_size;
+    assert(param_count == 1);
+    rip_check(type = swan_value_to_type(&params[0]));
+    free(type);
+    swan_value_clear(&params[0]);
     return 0;
 }
 
-_static_op_(swan_type, opset)
+_simple_opset_(swan_type)
 {
-    struct swan_type  *type;
-    assert(param_count == 2);
-    assert(swan_value_is_empty(&params[0]));
-    type = cork_container_of(params[1].opset, struct swan_type, parent);
-    swan_opset_value(&params[0], swan_opset_alias(type->base));
-    return 0;
-}
-
-_get_operation_(swan_type)
-{
-    struct swan_type  *type =
-        cork_container_of(opset, struct swan_type, parent);
-    get_static_op("instance_size", swan_type, instance_size);
-    get_static_op("opset", swan_type, opset);
-    get_op("init", type->init);
-    get_static_op("~alias", swan_static, alias);
-    get_static_op("~unref", swan_static, unref);
+    get_static_op("~unref", swan_type, unref);
     return NULL;
 }
 
-#define _static_type_(name, opset_type, instance_size) \
-static struct swan_type  _##name##__type = { \
-    { \
-        swan_type__get_operation, \
-        swan_opset__static__alias, \
-        swan_opset__static__unref \
-    }, \
-    opset_type(name), \
-    static_op(name, init), \
-    instance_size \
-};
 
-#define static_type(name)  (&_##name##__type.parent)
+int
+swan_type_new(struct swan_value *dest, size_t instance_size,
+              struct swan_opset *opset)
+{
+    struct swan_type  *content = cork_new(struct swan_type);
+    content->instance_size = instance_size;
+    content->opset = swan_opset_alias(opset);
+    dest->representation = SWAN_REP_TYPE;
+    dest->opset = simple_opset(swan_type);
+    dest->content = content;
+    return 0;
+}
 
+
+#define _type_(name, instance_size) \
+_static_op_(name, type) \
+{ \
+    assert(param_count == 1); \
+    assert(swan_value_is_empty(&params[0])); \
+    return swan_type_new \
+        (&params[0], instance_size, simple_opset(name##__type)); \
+}
