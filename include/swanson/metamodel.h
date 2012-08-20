@@ -84,8 +84,6 @@ struct swan_value {
     struct swan_opset  *opset;
 };
 
-typedef cork_array(struct swan_value)  swan_value_array;
-
 #define SWAN_VALUE_EMPTY  { SWAN_REP_NONE, NULL, NULL }
 
 #define swan_value_clear(value) \

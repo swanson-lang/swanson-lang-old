@@ -96,6 +96,14 @@ struct buf {
         (buf->callback, cork_array_at(&buf->params, 0), \
          contents, content_length))
 
+#define START_BLOCK \
+    (buf->callback->start_block \
+        (buf->callback, buf->target, \
+         cork_array_size(&buf->params), &cork_array_at(&buf->params, 0)))
+
+#define END_BLOCK \
+    (buf->callback->end_block(buf->callback))
+
 static inline struct cork_buffer *
 new_buffer(struct buf *buf)
 {
@@ -313,6 +321,9 @@ swan_parse_result_list(struct buf *buf)
 }
 
 static inline int
+swan_parse_block(struct buf *buf);
+
+static inline int
 swan_parse_one_result(struct buf *buf)
 {
     char  token;
@@ -341,6 +352,11 @@ swan_parse_one_result(struct buf *buf)
         } else {
             PARSE_ERROR("Expected \".\", \":\", or \";\"");
         }
+    } else if (token == '{') {
+        /* This is the start of a block */
+        buf->target = cork_array_at(&buf->params, 0);
+        buf->params.size = 0;
+        return swan_parse_block(buf);
     } else if (IS_ALPHA(token)) {
         struct cork_buffer  *id = new_buffer(buf);
         rii_check(swan_parse_id_token(buf, id));
@@ -404,6 +420,76 @@ swan_parse_statement(struct buf *buf)
     } else {
         PARSE_ERROR("Expected \"=\", \".\", \":\", or \",\"");
     }
+}
+
+static inline int
+swan_parse_block_params(struct buf *buf)
+{
+    char  token;
+    bool  first_param = true;
+
+    while (true) {
+        if (first_param) {
+            token = swan_peek_token(buf);
+            if (token == ')') {
+                /* End of the block parameters */
+                ADVANCE_BUF;
+                return START_BLOCK;
+            } else if (token == '"' || IS_ALPHA(token)) {
+                struct cork_buffer  *id = new_buffer(buf);
+                rii_check(swan_parse_identifier(buf, id));
+                cork_array_append(&buf->params, id->buf);
+                first_param = false;
+            } else {
+                PARSE_ERROR("Expected \")\" or identifier");
+            }
+        } else {
+            token = swan_get_token(buf);
+            if (token == ')') {
+                /* End of the block parameters */
+                return START_BLOCK;
+            } else if (token == ',') {
+                struct cork_buffer  *id = new_buffer(buf);
+                rii_check(swan_parse_identifier(buf, id));
+                cork_array_append(&buf->params, id->buf);
+            } else {
+                PARSE_ERROR("Expected \",\" or \")\"");
+            }
+        }
+    }
+}
+
+static inline int
+swan_parse_block(struct buf *buf)
+{
+    char  token;
+
+    DEBUG("--- Parsing block\n");
+    rii_check(swan_require_token(buf, '{'));
+    token = swan_peek_token(buf);
+
+    if (token == '(') {
+        ADVANCE_BUF;
+        rii_check(swan_parse_block_params(buf));
+    } else {
+        /* No parameters; go ahead and start the block. */
+        rii_check(START_BLOCK);
+    }
+
+    /* Parse the statements in the block */
+    while (true) {
+        token = swan_peek_token(buf);
+        if (token == '}') {
+            /* End of the block!  Read the trailing semicolon and return. */
+            ADVANCE_BUF;
+            rii_check(swan_require_token(buf, ';'));
+            return END_BLOCK;
+        } else {
+            rii_check(swan_parse_statement(buf));
+        }
+    }
+
+    cork_unreachable();
 }
 
 int

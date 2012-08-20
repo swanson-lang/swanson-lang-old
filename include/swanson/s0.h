@@ -33,6 +33,13 @@ struct swan_s0_callback {
                        size_t content_length);
 
     int
+    (*start_block)(struct swan_s0_callback *callback, const char *target,
+                   size_t param_count, const char **params);
+
+    int
+    (*end_block)(struct swan_s0_callback *callback);
+
+    int
     (*finish)(struct swan_s0_callback *callback);
 };
 

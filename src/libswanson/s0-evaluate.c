@@ -92,6 +92,22 @@ swan_s0_evaluate__string_constant(struct swan_s0_callback *callback,
 }
 
 static int
+swan_s0_evaluate__start_block(struct swan_s0_callback *callback,
+                              const char *target, size_t param_count,
+                              const char **params)
+{
+    swan_bad_value("NYI: Cannot evaluate block literals");
+    return -1;
+}
+
+static int
+swan_s0_evaluate__end_block(struct swan_s0_callback *callback)
+{
+    swan_bad_value("NYI: Cannot evaluate block literals");
+    return -1;
+}
+
+static int
 swan_s0_evaluate__finish(struct swan_s0_callback *callback)
 {
     struct swan_s0_evaluator_internal  *eval = cork_container_of
@@ -106,6 +122,8 @@ swan_s0_evaluator_new_empty(const char *scope_name)
         cork_new(struct swan_s0_evaluator_internal);
     self->public.callback.operation_call = swan_s0_evaluate__operation_call;
     self->public.callback.string_constant = swan_s0_evaluate__string_constant;
+    self->public.callback.start_block = swan_s0_evaluate__start_block;
+    self->public.callback.end_block = swan_s0_evaluate__end_block;
     self->public.callback.finish = swan_s0_evaluate__finish;
     self->public.scope = swan_scope_new(scope_name);
     cork_array_init(&self->params);
