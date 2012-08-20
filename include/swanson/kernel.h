@@ -141,4 +141,19 @@ int
 swan_string_new(struct swan_value *dest, const void *data, size_t size);
 
 
+/*-----------------------------------------------------------------------
+ * Blocks
+ */
+
+/* hash of "block" */
+#define SWAN_REP_BLOCK  0xa0687b30
+#define swan_value_is_block(value)  swan_value_is(value, SWAN_REP_BLOCK)
+swan_value_define_to(block, struct swan_block, SWAN_REP_BLOCK,
+                     "Expected an block");
+
+/* Takes ownership of block */
+int
+swan_block_value(struct swan_value *dest, struct swan_block *block);
+
+
 #endif /* SWANSON_KERNEL_H */

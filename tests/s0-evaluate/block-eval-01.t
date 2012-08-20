@@ -1,5 +1,4 @@
   $ swan s0 evaluate <<EOF
   > result = { () };
+  > result:~unref();
   > EOF
-  NYI: Cannot evaluate block literals
-  [1]

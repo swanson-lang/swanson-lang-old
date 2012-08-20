@@ -279,9 +279,8 @@ static struct cork_command  evaluate =
 static void
 swan_s0_evaluate(int argc, char **argv)
 {
-    int  rc;
     struct cork_buffer  buf = CORK_BUFFER_INIT();
-    struct swan_s0_evaluator  *eval;
+    struct swan_block  *block;
 
     /* Open the input file. */
     if (argc > 1) {
@@ -294,19 +293,21 @@ swan_s0_evaluate(int argc, char **argv)
     read_file(argc == 0? NULL: argv[0], &buf);
 
     /* Evaluate the file, printing out any error that occurs. */
-    eval = swan_s0_evaluator_new_kernel();
-    swan_s0_parse((char *) buf.buf, buf.size, &eval->callback);
-    if (cork_error_occurred()) {
-        rc = EXIT_FAILURE;
-        fprintf(stderr, "%s\n", cork_error_message());
-    } else {
-        rc = EXIT_SUCCESS;
-    }
+    block = swan_kernel_block_new();
+    ei_check(swan_s0_parse_block(block, (char *) buf.buf, buf.size));
+    ei_check(swan_kernel_block_evaluate(block));
 
-    swan_s0_evaluator_free(eval);
+    cork_gc_decref(block);
     cork_buffer_done(&buf);
     cork_gc_done();
-    exit(rc);
+    exit(EXIT_SUCCESS);
+
+error:
+    fprintf(stderr, "%s\n", cork_error_message());
+    cork_gc_decref(block);
+    cork_buffer_done(&buf);
+    cork_gc_done();
+    exit(EXIT_FAILURE);
 }
 
 

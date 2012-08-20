@@ -19,7 +19,7 @@
 
 struct swan_scope_entry {
     struct swan_value  value;
-    bool  should_unref;
+    bool  block_must_unref;
 };
 
 static bool
@@ -55,7 +55,7 @@ swan_scope_check_values(struct swan_scope *self)
     cork_hash_table_iterator_init(&self->entries, &iter);
     while ((entry = cork_hash_table_iterator_next(&iter)) != NULL) {
         struct swan_scope_entry  *scope_entry = entry->value;
-        if (!scope_entry->should_unref &&
+        if (scope_entry->block_must_unref &&
             !swan_value_is_empty(&scope_entry->value)) {
             swan_dangling_reference("%s not unreferenced", (char *) entry->key);
             return -1;
@@ -73,9 +73,6 @@ swan_scope_free(struct swan_scope *self)
     while ((entry = cork_hash_table_iterator_next(&iter)) != NULL) {
         struct swan_scope_entry  *scope_entry = entry->value;
         cork_strfree((const char *) entry->key);
-        if (!swan_value_is_empty(&scope_entry->value)) {
-            swan_value_unref(&scope_entry->value);
-        }
         free(scope_entry);
     }
 
@@ -86,7 +83,7 @@ swan_scope_free(struct swan_scope *self)
 
 static void
 swan_scope_add_raw(struct swan_scope *self, const char *name,
-                   struct swan_value *value, bool should_unref)
+                   struct swan_value *value, bool block_must_unref)
 {
     bool  is_new;
     struct swan_scope_entry  *scope_entry;
@@ -100,6 +97,7 @@ swan_scope_add_raw(struct swan_scope *self, const char *name,
         scope_entry = cork_new(struct swan_scope_entry);
         entry->key = (void *) cork_strdup(name);
         entry->value = scope_entry;
+        scope_entry->block_must_unref = block_must_unref;
     } else {
         /* Otherwise we can keep the existing identifier (which we'll have
          * copied in a previous call).  We *don't* unref the value, because
@@ -109,21 +107,20 @@ swan_scope_add_raw(struct swan_scope *self, const char *name,
 
     /* We steal a reference to value. */
     scope_entry->value = *value;
-    scope_entry->should_unref = should_unref;
 }
 
 void
 swan_scope_add(struct swan_scope *self, const char *name,
                struct swan_value *value)
 {
-    swan_scope_add_raw(self, name, value, false);
+    swan_scope_add_raw(self, name, value, true);
 }
 
 void
 swan_scope_add_predefined(struct swan_scope *self, const char *name,
                           struct swan_value *value)
 {
-    swan_scope_add_raw(self, name, value, true);
+    swan_scope_add_raw(self, name, value, false);
 }
 
 void
