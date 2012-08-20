@@ -25,4 +25,6 @@
 #include "kernel/15-assignable.c.in"
 #include "kernel/15-array.c.in"
 
+#include "kernel/20-control.c.in"
+
 #include "kernel/99-kernel.c.in"
