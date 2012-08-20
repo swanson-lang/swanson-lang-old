@@ -1,0 +1,135 @@
+/* -*- coding: utf-8 -*-
+ * ----------------------------------------------------------------------
+ * Copyright © 2012, RedJack, LLC.
+ * All rights reserved.
+ *
+ * Please see the LICENSE.txt file in this distribution for license
+ * details.
+ * ----------------------------------------------------------------------
+ */
+
+#include <assert.h>
+#include <stdio.h>
+
+#include <libcork/core.h>
+#include <libcork/helpers/errors.h>
+
+#include "swanson/kernel.h"
+#include "swanson/metamodel.h"
+
+
+_declare_simple_opset_(swan_boolean);
+
+static bool swan_boolean__false = false;
+static bool swan_boolean__true = true;
+
+int
+swan_boolean_new(struct swan_value *dest, bool value)
+{
+    dest->representation = SWAN_REP_BOOLEAN;
+    dest->opset = simple_opset(swan_boolean);
+    dest->content = value? &swan_boolean__true: &swan_boolean__false;
+    return 0;
+}
+
+_static_op_(swan_boolean, unref)
+{
+    assert(param_count == 1);
+    rip_check(swan_value_to_boolean(&params[0]));
+    swan_value_clear(&params[0]);
+    return 0;
+}
+
+_static_op_(swan_boolean, print)
+{
+    bool  *self;
+    assert(param_count == 1);
+    rip_check(self = swan_value_to_boolean(&params[0]));
+    printf("%s\n", *self? "true": "false");
+    return 0;
+}
+
+_static_op_(swan_boolean, and)
+{
+    bool  *lhs;
+    bool  *rhs;
+    assert(param_count == 3);
+    assert(swan_value_is_empty(&params[0]));
+    rip_check(lhs = swan_value_to_boolean(&params[1]));
+    rip_check(rhs = swan_value_to_boolean(&params[2]));
+    return swan_boolean_new(&params[0], *lhs && *rhs);
+}
+
+_simple_opset_(swan_boolean)
+{
+    get_static_op("&&", swan_boolean, and);
+    get_static_op("print", swan_boolean, print);
+    get_static_op("~unref", swan_boolean, unref);
+    return NULL;
+}
+
+
+_static_op_(swan_boolean, init)
+{
+    assert(param_count == 1);
+    rip_check(swan_value_to_assignable(&params[0]));
+    return 0;
+}
+
+_static_op_(swan_boolean, get)
+{
+    struct swan_assignable  *self;
+    bool  *content;
+    assert(param_count == 2);
+    assert(swan_value_is_empty(&params[0]));
+    rip_check(self = swan_value_to_assignable(&params[1]));
+    content = self->content;
+    return swan_boolean_new(&params[0], *content);
+}
+
+_static_op_(swan_boolean, set)
+{
+    struct swan_assignable  *self;
+    bool  *content;
+    bool  *src;
+    assert(param_count == 2);
+    rip_check(self = swan_value_to_assignable(&params[0]));
+    rip_check(src = swan_value_to_boolean(&params[1]));
+    content = self->content;
+    *content = *src;
+    return 0;
+}
+
+_simple_opset_(swan_boolean__type)
+{
+    get_static_op("init", swan_boolean, init);
+    get_static_op("*", swan_boolean, get);
+    get_static_op("=", swan_boolean, set);
+    return NULL;
+}
+
+_type_(swan_boolean, sizeof(bool));
+
+
+_static_op_(swan_boolean, _false)
+{
+    assert(param_count == 1);
+    assert(swan_value_is_empty(&params[0]));
+    return swan_boolean_new(&params[0], false);
+}
+
+_static_op_(swan_boolean, _true)
+{
+    assert(param_count == 1);
+    assert(swan_value_is_empty(&params[0]));
+    return swan_boolean_new(&params[0], true);
+}
+
+_simple_opset_(swan_kernel_boolean)
+{
+    get_static_op("false", swan_boolean, _false);
+    get_static_op("true", swan_boolean, _true);
+    get_static_op("type", swan_boolean, type);
+    get_static_op("~unref", swan_static, unref);
+    return NULL;
+}

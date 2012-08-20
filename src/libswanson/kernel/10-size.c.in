@@ -61,9 +61,33 @@ _static_op_(swan_size, add)
     return swan_size_new(&params[0], *lhs + *rhs);
 }
 
+_static_op_(swan_size, eq)
+{
+    size_t  *lhs;
+    size_t  *rhs;
+    assert(param_count == 3);
+    assert(swan_value_is_empty(&params[0]));
+    rip_check(lhs = swan_value_to_size(&params[1]));
+    rip_check(rhs = swan_value_to_size(&params[2]));
+    return swan_boolean_new(&params[0], *lhs == *rhs);
+}
+
+_static_op_(swan_size, ne)
+{
+    size_t  *lhs;
+    size_t  *rhs;
+    assert(param_count == 3);
+    assert(swan_value_is_empty(&params[0]));
+    rip_check(lhs = swan_value_to_size(&params[1]));
+    rip_check(rhs = swan_value_to_size(&params[2]));
+    return swan_boolean_new(&params[0], *lhs != *rhs);
+}
+
 _simple_opset_(swan_size)
 {
     get_static_op("+", swan_size, add);
+    get_static_op("==", swan_size, eq);
+    get_static_op("!=", swan_size, ne);
     get_static_op("print", swan_size, print);
     get_static_op("~unref", swan_size, unref);
     return NULL;
