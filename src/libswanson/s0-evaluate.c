@@ -31,103 +31,156 @@
 
 typedef cork_array(struct swan_value)  value_array;
 
-struct swan_s0_evaluator_internal {
-    struct swan_s0_evaluator  public;
+struct swan_s0_evaluator {
+    struct swan_scope  *scope;
     value_array  params;
 };
 
 static int
-swan_s0_evaluate__operation_call(struct swan_s0_callback *callback,
-                                 const char *target, const char *operation_name,
-                                 size_t param_count, const char **params)
+swan_s0_evaluate__operation_call(struct swan_s0_evaluator *self,
+                                 struct swan_statement *stmt)
 {
     size_t  i;
-    struct swan_s0_evaluator_internal  *eval = cork_container_of
-        (callback, struct swan_s0_evaluator_internal, public.callback);
+    size_t  param_count;
     struct swan_value  target_value;
     struct swan_operation  *operation;
 
-    DEBUG("Calling %s.%s\n", target, operation_name);
-    swan_scope_get(eval->public.scope, target, &target_value);
+    DEBUG("Calling %s.%s\n", stmt->target, stmt->operation_content);
+    swan_scope_get(self->scope, stmt->target, &target_value);
     if (swan_value_is_empty(&target_value)) {
         swan_s0_undefined_identifier
-            ("No value named %s in scope %s", target, eval->public.scope->name);
+            ("No value named %s in scope %s", stmt->target, self->scope->name);
         return -1;
     }
 
-    rip_check(operation =
-              swan_value_require_operation(&target_value, operation_name));
-    cork_array_ensure_size(&eval->params, param_count);
+    rip_check(operation = swan_value_require_operation
+              (&target_value, stmt->operation_name));
+    param_count = cork_array_size(&stmt->params);
+    cork_array_ensure_size(&self->params, param_count);
 
     for (i = 0; i < param_count; i++) {
-        struct swan_value  *param = &cork_array_at(&eval->params, i);
-        DEBUG("  Param %zu = %s\n", i, params[i]);
-        swan_scope_get(eval->public.scope, params[i], param);
+        const char  *param_name = cork_array_at(&stmt->params, i);
+        struct swan_value  *param = &cork_array_at(&self->params, i);
+        DEBUG("  Param %zu = %s\n", i, param_name);
+        swan_scope_get(self->scope, param_name, param);
     }
 
     rii_check(swan_operation_evaluate
-              (operation,
-               param_count, &cork_array_at(&eval->params, 0)));
+              (operation, param_count, &cork_array_at(&self->params, 0)));
 
     for (i = 0; i < param_count; i++) {
-        DEBUG("  Param %zu = %s\n", i, params[i]);
+        const char  *param_name = cork_array_at(&stmt->params, i);
+        DEBUG("  Param %zu = %s\n", i, param_name);
         swan_scope_add
-            (eval->public.scope, params[i], &cork_array_at(&eval->params, i));
+            (self->scope, param_name, &cork_array_at(&self->params, i));
     }
 
     return 0;
 }
 
 static int
-swan_s0_evaluate__string_constant(struct swan_s0_callback *callback,
-                                  const char *result, const char *contents,
-                                  size_t content_length)
+swan_s0_evaluate__string_constant(struct swan_s0_evaluator *self,
+                                  struct swan_statement *stmt)
 {
-    struct swan_s0_evaluator_internal  *eval = cork_container_of
-        (callback, struct swan_s0_evaluator_internal, public.callback);
     struct swan_value  str = SWAN_VALUE_EMPTY;
-    rii_check(swan_string_new(&str, contents, content_length));
-    swan_scope_add(eval->public.scope, result, &str);
+    rii_check(swan_string_new(&str, stmt->contents, stmt->content_length));
+    swan_scope_add(self->scope, stmt->target, &str);
     return 0;
 }
 
 static int
-swan_s0_evaluate__finish(struct swan_s0_callback *callback)
+swan_s0_evaluate__block(struct swan_s0_evaluator *self,
+                        struct swan_statement *stmt)
 {
-    struct swan_s0_evaluator_internal  *eval = cork_container_of
-        (callback, struct swan_s0_evaluator_internal, public.callback);
-    return swan_scope_check_values(eval->public.scope);
+    struct swan_value  block = SWAN_VALUE_EMPTY;
+    rii_check(swan_block_value(&block, stmt->block));
+    swan_scope_add(self->scope, stmt->target, &block);
+    return 0;
 }
 
-struct swan_s0_evaluator *
-swan_s0_evaluator_new_empty(const char *scope_name)
+
+static int
+swan_block_evaluate_statement(struct swan_s0_evaluator *self,
+                              struct swan_statement *stmt)
 {
-    struct swan_s0_evaluator_internal  *self =
-        cork_new(struct swan_s0_evaluator_internal);
-    self->public.callback.operation_call = swan_s0_evaluate__operation_call;
-    self->public.callback.string_constant = swan_s0_evaluate__string_constant;
-    self->public.callback.finish = swan_s0_evaluate__finish;
-    self->public.scope = swan_scope_new(scope_name);
-    cork_array_init(&self->params);
-    return &self->public;
+    switch (stmt->type) {
+        case SWAN_STATEMENT_OPERATION_CALL:
+            return swan_s0_evaluate__operation_call(self, stmt);
+
+        case SWAN_STATEMENT_STRING_CONSTANT:
+            return swan_s0_evaluate__string_constant(self, stmt);
+
+        case SWAN_STATEMENT_BLOCK:
+            return swan_s0_evaluate__block(self, stmt);
+
+        default:
+            cork_unreachable();
+    }
 }
 
-struct swan_s0_evaluator *
-swan_s0_evaluator_new_kernel(void)
+static int
+swan_block_evaluate_statements(struct swan_s0_evaluator *self,
+                               struct swan_block *block)
 {
+    struct cork_dllist_item  *curr;
+
+    for (curr = cork_dllist_start(&block->statements);
+         !cork_dllist_is_end(&block->statements, curr); curr = curr->next) {
+        struct swan_statement  *stmt =
+            cork_container_of(curr, struct swan_statement, list);
+        rii_check(swan_block_evaluate_statement(self, stmt));
+    }
+
+    return 0;
+}
+
+int
+swan_block_evaluate(struct swan_block *block, const char *scope_name,
+                    size_t param_count, struct swan_value *params)
+{
+    size_t  i;
+    struct swan_s0_evaluator  self;
+
+    if (param_count != cork_array_size(&block->params)) {
+        swan_bad_value
+            ("Trying to evaluate block with wrong number of parameters "
+             "(got %zu, need %zu)",
+             param_count, cork_array_size(&block->params));
+        return -1;
+    }
+
+    self.scope = swan_scope_new(scope_name);
+    cork_array_init(&self.params);
+
+    for (i = 0; i < param_count; i++) {
+        const char  *param_name = cork_array_at(&block->params, i);
+        swan_scope_add_predefined(self.scope, param_name, &params[i]);
+    }
+
+    ei_check(swan_block_evaluate_statements(&self, block));
+    ei_check(swan_scope_check_values(self.scope));
+
+    for (i = 0; i < param_count; i++) {
+        const char  *param_name = cork_array_at(&block->params, i);
+        swan_scope_get(self.scope, param_name, &params[i]);
+    }
+
+    cork_array_done(&self.params);
+    swan_scope_free(self.scope);
+    return 0;
+
+error:
+    cork_array_done(&self.params);
+    swan_scope_free(self.scope);
+    return -1;
+}
+
+int
+swan_kernel_block_evaluate(struct swan_block *block)
+{
+    int  rc;
     struct swan_value  kernel = SWAN_VALUE_EMPTY;
-    struct swan_s0_evaluator  *self = swan_s0_evaluator_new_empty("globals");
     swan_kernel_get(&kernel);
-    swan_scope_add_predefined(self->scope, "kernel", &kernel);
-    return self;
-}
-
-void
-swan_s0_evaluator_free(struct swan_s0_evaluator *vself)
-{
-    struct swan_s0_evaluator_internal  *self =
-        cork_container_of(vself, struct swan_s0_evaluator_internal, public);
-    cork_array_done(&self->params);
-    swan_scope_free(self->public.scope);
-    free(self);
+    rc = swan_block_evaluate(block, "globals", 1, &kernel);
+    return rc;
 }

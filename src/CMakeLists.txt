@@ -13,6 +13,7 @@ include_directories(../include)
 # Build the library
 
 set(LIBSWANSON_SRC
+    libswanson/block.c
     libswanson/kernel.c
     libswanson/s0-evaluate.c
     libswanson/s0-parser.c

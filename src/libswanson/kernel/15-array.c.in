@@ -39,6 +39,7 @@ struct swan_array_type {
     struct swan_opset  array_opset;
     struct swan_operation  init;
     struct swan_operation  claim;
+    struct swan_operation  each;
 };
 
 
@@ -60,12 +61,12 @@ _static_op_(swan_array__element, return)
     struct swan_assignable  *vself;
     struct swan_array_element  *self;
     assert(param_count == 2);
-    assert(swan_value_is_empty(&params[0]));
-    rip_check(vself = swan_value_to_assignable(&params[1]));
+    rip_check(vself = swan_value_to_assignable(&params[0]));
+    assert(swan_value_is_empty(&params[1]));
     self = cork_container_of(vself, struct swan_array_element, parent);
-    params[0] = self->array;
+    params[1] = self->array;
     free(self);
-    swan_value_clear(&params[1]);
+    swan_value_clear(&params[0]);
     return 0;
 }
 
@@ -108,16 +109,16 @@ _evaluate_(swan_array, init)
 
     for (i = 0; i < type->element_count; i++) {
         struct swan_value  values[3];
-        swan_value_clear(&values[0]);
-        values[1] = params[0];
+        values[0] = params[0];
+        swan_value_clear(&values[1]);
         rii_check(swan_size_new(&values[2], i));
         rii_check(swan_value_evaluate(&params[0], "[]", 3, values));
-        rii_check(swan_value_evaluate(&values[0], "init", 1, &values[0]));
+        rii_check(swan_value_evaluate(&values[1], "init", 1, &values[1]));
         rii_check(swan_value_unref(&values[2]));
 
-        values[1] = values[0];
-        swan_value_clear(&values[0]);
-        rii_check(swan_value_evaluate(&values[1], "return", 2, values));
+        values[0] = values[1];
+        swan_value_clear(&values[1]);
+        rii_check(swan_value_evaluate(&values[0], "return", 2, values));
     }
 
     return 0;
@@ -131,20 +132,65 @@ _evaluate_(swan_array, claim)
     size_t  *index;
 
     assert(param_count == 3);
-    assert(swan_value_is_empty(&params[0]));
-    rip_check(array = swan_value_to_assignable(&params[1]));
+    rip_check(array = swan_value_to_assignable(&params[0]));
+    assert(swan_value_is_empty(&params[1]));
     type = cork_container_of(operation, struct swan_array_type, claim);
     rip_check(index = swan_value_to_size(&params[2]));
 
     element = cork_new(struct swan_array_element);
     element->parent.content = array->content + (*index * type->element_size);
-    element->array = params[1];
+    element->array = params[0];
 
-    params[0].representation = SWAN_REP_ASSIGNABLE;
-    params[0].opset = &type->element_opset;
-    params[0].content = element;
-    swan_value_clear(&params[1]);
+    params[1].representation = SWAN_REP_ASSIGNABLE;
+    params[1].opset = &type->element_opset;
+    params[1].content = element;
+    swan_value_clear(&params[0]);
 
+    return 0;
+}
+
+_evaluate_(swan_array, each)
+{
+    size_t  i;
+    struct swan_assignable  *array;
+    struct swan_block  *block;
+    struct swan_array_type  *type;
+    struct swan_value  *values;
+    size_t  value_count;
+
+    assert(param_count >= 2);
+    rip_check(array = swan_value_to_assignable(&params[0]));
+    rip_check(block = swan_value_to_block(&params[1]));
+    type = cork_container_of(operation, struct swan_array_type, each);
+
+    /* The array and block are replaced by the block, element, and index. */
+    value_count = param_count + 1;
+    values = cork_calloc(value_count, sizeof(struct swan_value));
+    memcpy(&values[3], &params[2],
+           (param_count - 2) * sizeof(struct swan_value));
+
+    for (i = 0; i < type->element_count; i++) {
+        /* Extract the current element using the [] operation. */
+        values[0] = params[0];
+        swan_value_clear(&values[1]);
+        rii_check(swan_size_new(&values[2], i));
+        rii_check(swan_value_evaluate(&params[0], "[]", 3, values));
+
+        /* Evaluate the block. */
+        values[0] = params[1];  /* block */
+        rii_check(swan_value_evaluate(&values[0], "()", value_count, values));
+        rii_check(swan_value_unref(&values[2]));
+
+        /* Return the element */
+        values[0] = values[1];
+        swan_value_clear(&values[1]);
+        rii_check(swan_value_evaluate(&values[0], "return", 2, values));
+    }
+
+    /* Copy the extras parameters back, in case they've changed. */
+    memcpy(&params[2], &values[3],
+           (param_count - 2) * sizeof(struct swan_value));
+    free(values);
     return 0;
 }
 
@@ -154,6 +200,7 @@ _get_operation_(swan_array)
         cork_container_of(opset, struct swan_array_type, array_opset);
     get_op("init", &self->init);
     get_op("[]", &self->claim);
+    get_op("each", &self->each);
     return NULL;
 }
 
@@ -217,6 +264,7 @@ swan_array_type_new(struct swan_value *dest, struct swan_type *element_type,
     self->array_opset.unref = swan_array__array_unref;
     self->init.evaluate = eval_func(swan_array, init);
     self->claim.evaluate = eval_func(swan_array, claim);
+    self->each.evaluate = eval_func(swan_array, each);
 
     self->parent.instance_size = element_count * element_type->instance_size;
     self->parent.opset = &self->array_opset;

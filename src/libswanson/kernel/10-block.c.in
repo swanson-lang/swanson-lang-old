@@ -1,0 +1,54 @@
+/* -*- coding: utf-8 -*-
+ * ----------------------------------------------------------------------
+ * Copyright © 2012, RedJack, LLC.
+ * All rights reserved.
+ *
+ * Please see the LICENSE.txt file in this distribution for license
+ * details.
+ * ----------------------------------------------------------------------
+ */
+
+#include <assert.h>
+
+#include <libcork/core.h>
+
+#include "swanson/kernel.h"
+#include "swanson/metamodel.h"
+#include "swanson/s0.h"
+
+
+_static_op_(swan_block, unref)
+{
+    struct swan_block  *self;
+    assert(param_count == 1);
+    rip_check(self = swan_value_to_block(&params[0]));
+    cork_gc_decref(self);
+    swan_value_clear(&params[0]);
+    return 0;
+}
+
+_static_op_(swan_block, call)
+{
+    struct swan_block  *self;
+    assert(param_count >= 1);
+    rip_check(self = swan_value_to_block(&params[0]));
+    return swan_block_evaluate(self, "block", param_count - 1, &params[1]);
+}
+
+_simple_opset_(swan_block)
+{
+    get_static_op("()", swan_block, call);
+    get_static_op("~unref", swan_block, unref);
+    return NULL;
+}
+
+
+int
+swan_block_value(struct swan_value *dest, struct swan_block *block)
+{
+    assert(swan_value_is_empty(dest));
+    dest->representation = SWAN_REP_BLOCK;
+    dest->opset = simple_opset(swan_block);
+    dest->content = cork_gc_incref(block);
+    return 0;
+}

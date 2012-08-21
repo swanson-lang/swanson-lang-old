@@ -100,14 +100,22 @@ swan_array_type_new(struct swan_value *dest, struct swan_type *element_type,
 
 
 /*-----------------------------------------------------------------------
- * Sizes
+ * Primitives
  */
+
+/* hash of "boolean" */
+#define SWAN_REP_BOOLEAN  0x6e3791ae
+#define swan_value_is_boolean(value)  swan_value_is(value, SWAN_REP_BOOLEAN)
+swan_value_define_to(boolean, bool, SWAN_REP_BOOLEAN, "Expected an boolean");
 
 /* hash of "size" */
 #define SWAN_REP_SIZE  0xed8917fa
 #define swan_value_is_size(value)  swan_value_is(value, SWAN_REP_SIZE)
-swan_value_define_to(size, size_t, SWAN_REP_SIZE,
-                     "Expected an size");
+swan_value_define_to(size, size_t, SWAN_REP_SIZE, "Expected an size");
+
+
+int
+swan_boolean_new(struct swan_value *dest, bool value);
 
 int
 swan_size_new(struct swan_value *dest, size_t value);
@@ -131,6 +139,21 @@ swan_value_define_to(string, struct swan_string, SWAN_REP_STRING,
 /* Makes a copy of content */
 int
 swan_string_new(struct swan_value *dest, const void *data, size_t size);
+
+
+/*-----------------------------------------------------------------------
+ * Blocks
+ */
+
+/* hash of "block" */
+#define SWAN_REP_BLOCK  0xa0687b30
+#define swan_value_is_block(value)  swan_value_is(value, SWAN_REP_BLOCK)
+swan_value_define_to(block, struct swan_block, SWAN_REP_BLOCK,
+                     "Expected an block");
+
+/* Takes ownership of block */
+int
+swan_block_value(struct swan_value *dest, struct swan_block *block);
 
 
 #endif /* SWANSON_KERNEL_H */

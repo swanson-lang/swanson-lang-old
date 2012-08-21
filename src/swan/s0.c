@@ -16,6 +16,7 @@
 #include <libcork/core.h>
 #include <libcork/cli.h>
 #include <libcork/ds.h>
+#include <libcork/helpers/errors.h>
 
 #include "swanson/s0.h"
 
@@ -138,29 +139,34 @@ print_quoted_string(const char *str)
     print_quoted_string_len(str, strlen(str));
 }
 
-static int
-swan_s0_verify__operation_call(struct swan_s0_callback *callback,
-                               const char *target, const char *operation_name,
-                               size_t param_count, const char **params)
+static void
+print_string_list(size_t count, const char **strings)
 {
     bool  first;
     size_t  i;
 
-    printf("{ \"type\": \"operation_call\", \"target\": ");
-    print_quoted_string(target);
-    printf(", \"operation\": ");
-    print_quoted_string(operation_name);
-
-    printf(", \"params\": [");
-    for (first = true, i = 0; i < param_count; i++) {
+    for (first = true, i = 0; i < count; i++) {
         if (first) {
             first = false;
         } else {
             printf(", ");
         }
-        print_quoted_string(params[i]);
+        print_quoted_string(strings[i]);
     }
+}
 
+static int
+swan_s0_verify__operation_call(struct swan_s0_callback *callback,
+                               const char *target, const char *operation_name,
+                               size_t param_count, const char **params)
+{
+
+    printf("{ \"type\": \"operation_call\", \"target\": ");
+    print_quoted_string(target);
+    printf(", \"operation\": ");
+    print_quoted_string(operation_name);
+    printf(", \"params\": [");
+    print_string_list(param_count, params);
     printf("] }\n");
     return 0;
 }
@@ -179,6 +185,26 @@ swan_s0_verify__string_constant(struct swan_s0_callback *callback,
 }
 
 static int
+swan_s0_verify__start_block(struct swan_s0_callback *callback,
+                            const char *target, size_t param_count,
+                            const char **params)
+{
+    printf("{ \"type\": \"start_block\", \"target\": ");
+    print_quoted_string(target);
+    printf(", \"params\": [");
+    print_string_list(param_count, params);
+    printf("] }\n");
+    return 0;
+}
+
+static int
+swan_s0_verify__end_block(struct swan_s0_callback *callback)
+{
+    printf("{ \"type\": \"end_block\" }\n");
+    return 0;
+}
+
+static int
 swan_s0_verify__finish(struct swan_s0_callback *callback)
 {
     return 0;
@@ -187,6 +213,8 @@ swan_s0_verify__finish(struct swan_s0_callback *callback)
 static struct swan_s0_callback  swan_s0_verify_callback = {
     swan_s0_verify__operation_call,
     swan_s0_verify__string_constant,
+    swan_s0_verify__start_block,
+    swan_s0_verify__end_block,
     swan_s0_verify__finish
 };
 
@@ -251,9 +279,8 @@ static struct cork_command  evaluate =
 static void
 swan_s0_evaluate(int argc, char **argv)
 {
-    int  rc;
     struct cork_buffer  buf = CORK_BUFFER_INIT();
-    struct swan_s0_evaluator  *eval;
+    struct swan_block  *block;
 
     /* Open the input file. */
     if (argc > 1) {
@@ -266,19 +293,21 @@ swan_s0_evaluate(int argc, char **argv)
     read_file(argc == 0? NULL: argv[0], &buf);
 
     /* Evaluate the file, printing out any error that occurs. */
-    eval = swan_s0_evaluator_new_kernel();
-    swan_s0_parse((char *) buf.buf, buf.size, &eval->callback);
-    if (cork_error_occurred()) {
-        rc = EXIT_FAILURE;
-        fprintf(stderr, "%s\n", cork_error_message());
-    } else {
-        rc = EXIT_SUCCESS;
-    }
+    block = swan_kernel_block_new();
+    ei_check(swan_s0_parse_block(block, (char *) buf.buf, buf.size));
+    ei_check(swan_kernel_block_evaluate(block));
 
-    swan_s0_evaluator_free(eval);
+    cork_gc_decref(block);
     cork_buffer_done(&buf);
     cork_gc_done();
-    exit(rc);
+    exit(EXIT_SUCCESS);
+
+error:
+    fprintf(stderr, "%s\n", cork_error_message());
+    cork_gc_decref(block);
+    cork_buffer_done(&buf);
+    cork_gc_done();
+    exit(EXIT_FAILURE);
 }
 
 

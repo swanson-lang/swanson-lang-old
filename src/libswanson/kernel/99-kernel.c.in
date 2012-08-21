@@ -9,6 +9,8 @@
  */
 
 
+_constant_op_(swan_kernel, boolean, simple_opset(swan_kernel_boolean), NULL);
+_constant_op_(swan_kernel, control, simple_opset(swan_kernel_control), NULL);
 _constant_op_(swan_kernel, size, simple_opset(swan_kernel_size), NULL);
 _constant_op_(swan_kernel, sizeof, simple_opset(swan_kernel_sizeof), NULL);
 
@@ -16,6 +18,8 @@ _simple_opset_(swan_kernel)
 {
     get_static_op("array", swan_kernel, array);
     get_static_op("assignable", swan_kernel, assignable);
+    get_static_op("boolean", swan_kernel, boolean);
+    get_static_op("control", swan_kernel, control);
     get_static_op("size", swan_kernel, size);
     get_static_op("sizeof", swan_kernel, sizeof);
     return NULL;

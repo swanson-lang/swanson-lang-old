@@ -1,0 +1,38 @@
+/* -*- coding: utf-8 -*-
+ * ----------------------------------------------------------------------
+ * Copyright © 2012, RedJack, LLC.
+ * All rights reserved.
+ *
+ * Please see the LICENSE.txt file in this distribution for license
+ * details.
+ * ----------------------------------------------------------------------
+ */
+
+#include <assert.h>
+
+#include <libcork/core.h>
+
+#include "swanson/kernel.h"
+#include "swanson/metamodel.h"
+#include "swanson/s0.h"
+
+
+_static_op_(swan_control, if)
+{
+    bool  *cond;
+    struct swan_block  *true_branch;
+    struct swan_block  *false_branch;
+    assert(param_count >= 3);
+    rip_check(cond = swan_value_to_boolean(&params[0]));
+    rip_check(true_branch = swan_value_to_block(&params[1]));
+    rip_check(false_branch = swan_value_to_block(&params[2]));
+    return swan_block_evaluate
+        (*cond? true_branch: false_branch, "if", param_count - 3, &params[3]);
+}
+
+_simple_opset_(swan_kernel_control)
+{
+    get_static_op("if", swan_control, if);
+    get_static_op("~unref", swan_static, unref);
+    return NULL;
+}

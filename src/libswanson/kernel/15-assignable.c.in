@@ -72,17 +72,17 @@ _static_op_(swan_allocator, alloc)
     struct swan_allocator  *self;
     struct swan_assignable  *assignable;
     assert(param_count == 2);
-    assert(swan_value_is_empty(&params[0]));
-    rip_check(self = swan_value_to_allocator(&params[1]));
+    rip_check(self = swan_value_to_allocator(&params[0]));
+    assert(swan_value_is_empty(&params[1]));
     assignable = cork_new(struct swan_assignable);
     assignable->content = cork_malloc(self->instance_size);
     /* The assignable needs a reference to the allocator, since that's where its
      * opset is stored. */
     cork_gc_incref(self);
-    params[0].representation = SWAN_REP_ASSIGNABLE;
-    params[0].opset = &self->assignable_opset;
-    params[0].content = assignable;
-    return swan_opset_evaluate(self->base_opset, "init", 1, &params[0]);
+    params[1].representation = SWAN_REP_ASSIGNABLE;
+    params[1].opset = &self->assignable_opset;
+    params[1].content = assignable;
+    return swan_opset_evaluate(self->base_opset, "init", 1, &params[1]);
 }
 
 _static_op_(swan_allocator, unref)

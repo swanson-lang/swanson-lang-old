@@ -17,10 +17,14 @@
 
 #include "kernel/02-types.c.in"
 
+#include "kernel/10-boolean.c.in"
+#include "kernel/10-block.c.in"
 #include "kernel/10-size.c.in"
 #include "kernel/10-string.c.in"
 
 #include "kernel/15-assignable.c.in"
 #include "kernel/15-array.c.in"
+
+#include "kernel/20-control.c.in"
 
 #include "kernel/99-kernel.c.in"
