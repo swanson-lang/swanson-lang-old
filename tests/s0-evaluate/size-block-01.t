@@ -12,7 +12,7 @@
   >     in:~unref();
   > };
   > 
-  > double:"()"(v2, v1);
+  > v2 = double:"()"(v1);
   > v2:print();
   > double:~unref();
   > v2:~unref();

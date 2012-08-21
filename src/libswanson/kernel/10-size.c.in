@@ -55,10 +55,10 @@ _static_op_(swan_size, add)
     size_t  *lhs;
     size_t  *rhs;
     assert(param_count == 3);
-    assert(swan_value_is_empty(&params[0]));
-    rip_check(lhs = swan_value_to_size(&params[1]));
+    rip_check(lhs = swan_value_to_size(&params[0]));
+    assert(swan_value_is_empty(&params[1]));
     rip_check(rhs = swan_value_to_size(&params[2]));
-    return swan_size_new(&params[0], *lhs + *rhs);
+    return swan_size_new(&params[1], *lhs + *rhs);
 }
 
 _static_op_(swan_size, eq)
@@ -66,10 +66,10 @@ _static_op_(swan_size, eq)
     size_t  *lhs;
     size_t  *rhs;
     assert(param_count == 3);
-    assert(swan_value_is_empty(&params[0]));
-    rip_check(lhs = swan_value_to_size(&params[1]));
+    rip_check(lhs = swan_value_to_size(&params[0]));
+    assert(swan_value_is_empty(&params[1]));
     rip_check(rhs = swan_value_to_size(&params[2]));
-    return swan_boolean_new(&params[0], *lhs == *rhs);
+    return swan_boolean_new(&params[1], *lhs == *rhs);
 }
 
 _static_op_(swan_size, ne)
@@ -77,10 +77,10 @@ _static_op_(swan_size, ne)
     size_t  *lhs;
     size_t  *rhs;
     assert(param_count == 3);
-    assert(swan_value_is_empty(&params[0]));
-    rip_check(lhs = swan_value_to_size(&params[1]));
+    rip_check(lhs = swan_value_to_size(&params[0]));
+    assert(swan_value_is_empty(&params[1]));
     rip_check(rhs = swan_value_to_size(&params[2]));
-    return swan_boolean_new(&params[0], *lhs != *rhs);
+    return swan_boolean_new(&params[1], *lhs != *rhs);
 }
 
 _simple_opset_(swan_size)
@@ -106,10 +106,10 @@ _static_op_(swan_size, get)
     struct swan_assignable  *self;
     size_t  *content;
     assert(param_count == 2);
-    assert(swan_value_is_empty(&params[0]));
-    rip_check(self = swan_value_to_assignable(&params[1]));
+    rip_check(self = swan_value_to_assignable(&params[0]));
+    assert(swan_value_is_empty(&params[1]));
     content = self->content;
-    return swan_size_new(&params[0], *content);
+    return swan_size_new(&params[1], *content);
 }
 
 _static_op_(swan_size, set)

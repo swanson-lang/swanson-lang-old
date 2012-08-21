@@ -60,12 +60,12 @@ _static_op_(swan_array__element, return)
     struct swan_assignable  *vself;
     struct swan_array_element  *self;
     assert(param_count == 2);
-    assert(swan_value_is_empty(&params[0]));
-    rip_check(vself = swan_value_to_assignable(&params[1]));
+    rip_check(vself = swan_value_to_assignable(&params[0]));
+    assert(swan_value_is_empty(&params[1]));
     self = cork_container_of(vself, struct swan_array_element, parent);
-    params[0] = self->array;
+    params[1] = self->array;
     free(self);
-    swan_value_clear(&params[1]);
+    swan_value_clear(&params[0]);
     return 0;
 }
 
@@ -108,16 +108,16 @@ _evaluate_(swan_array, init)
 
     for (i = 0; i < type->element_count; i++) {
         struct swan_value  values[3];
-        swan_value_clear(&values[0]);
-        values[1] = params[0];
+        values[0] = params[0];
+        swan_value_clear(&values[1]);
         rii_check(swan_size_new(&values[2], i));
         rii_check(swan_value_evaluate(&params[0], "[]", 3, values));
-        rii_check(swan_value_evaluate(&values[0], "init", 1, &values[0]));
+        rii_check(swan_value_evaluate(&values[1], "init", 1, &values[1]));
         rii_check(swan_value_unref(&values[2]));
 
-        values[1] = values[0];
-        swan_value_clear(&values[0]);
-        rii_check(swan_value_evaluate(&values[1], "return", 2, values));
+        values[0] = values[1];
+        swan_value_clear(&values[1]);
+        rii_check(swan_value_evaluate(&values[0], "return", 2, values));
     }
 
     return 0;
@@ -131,19 +131,19 @@ _evaluate_(swan_array, claim)
     size_t  *index;
 
     assert(param_count == 3);
-    assert(swan_value_is_empty(&params[0]));
-    rip_check(array = swan_value_to_assignable(&params[1]));
+    rip_check(array = swan_value_to_assignable(&params[0]));
+    assert(swan_value_is_empty(&params[1]));
     type = cork_container_of(operation, struct swan_array_type, claim);
     rip_check(index = swan_value_to_size(&params[2]));
 
     element = cork_new(struct swan_array_element);
     element->parent.content = array->content + (*index * type->element_size);
-    element->array = params[1];
+    element->array = params[0];
 
-    params[0].representation = SWAN_REP_ASSIGNABLE;
-    params[0].opset = &type->element_opset;
-    params[0].content = element;
-    swan_value_clear(&params[1]);
+    params[1].representation = SWAN_REP_ASSIGNABLE;
+    params[1].opset = &type->element_opset;
+    params[1].content = element;
+    swan_value_clear(&params[0]);
 
     return 0;
 }

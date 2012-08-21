@@ -12,8 +12,8 @@
   >     in:~unref();
   > };
   > 
-  > double:"()"(v2, v1);
-  > double:"()"(v4, v2);
+  > v2 = double:"()"(v1);
+  > v4 = double:"()"(v2);
   > v4:print();
   > double:~unref();
   > v4:~unref();

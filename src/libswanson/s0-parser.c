@@ -261,6 +261,19 @@ swan_parse_operation_params(struct buf *buf)
     }
 }
 
+static void
+swan_add_self_parameter(string_array *params, const char *self)
+{
+    size_t  i;
+    size_t  param_count = cork_array_size(params);
+    cork_array_ensure_size(params, param_count + 1);
+    for (i = param_count; i > 0; i--) {
+        cork_array_at(params, i) = cork_array_at(params, i - 1);
+    }
+    cork_array_at(params, 0) = self;
+    cork_array_size(params)++;
+}
+
 static inline int
 swan_parse_operation_call(struct buf *buf)
 {
@@ -309,7 +322,7 @@ swan_parse_result_list(struct buf *buf)
             if (token == '.') {
                 return swan_parse_operation_call(buf);
             } else if (token == ':') {
-                cork_array_append(&buf->params, id->buf);
+                swan_add_self_parameter(&buf->params, id->buf);
                 return swan_parse_operation_call(buf);
             } else {
                 PARSE_ERROR("Expected \".\" or \":\"");
@@ -347,7 +360,7 @@ swan_parse_one_result(struct buf *buf)
         } else if (token == ':') {
             /* It's a operation call with an implicit "self" parameter */
             buf->target = id->buf;
-            cork_array_append(&buf->params, id->buf);
+            swan_add_self_parameter(&buf->params, id->buf);
             return swan_parse_operation_call(buf);
         } else {
             PARSE_ERROR("Expected \".\", \":\", or \";\"");
@@ -365,7 +378,7 @@ swan_parse_one_result(struct buf *buf)
         if (token == '.') {
             return swan_parse_operation_call(buf);
         } else if (token == ':') {
-            cork_array_append(&buf->params, id->buf);
+            swan_add_self_parameter(&buf->params, id->buf);
             return swan_parse_operation_call(buf);
         } else {
             PARSE_ERROR("Expected \".\" or \":\"");
@@ -415,7 +428,7 @@ swan_parse_statement(struct buf *buf)
          * parameter. */
         DEBUG("--- No results, with self parameter\n");
         buf->target = id->buf;
-        cork_array_append(&buf->params, id->buf);
+        swan_add_self_parameter(&buf->params, id->buf);
         return swan_parse_operation_call(buf);
     } else {
         PARSE_ERROR("Expected \"=\", \".\", \":\", or \",\"");
