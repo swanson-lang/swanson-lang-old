@@ -17,6 +17,8 @@ set(MAN_FOOTER "Swanson")
 # called foo.5.pandoc.
 
 set(MAN_PAGES
+    lgv_method.3
+    lgv_method_set.3
 )
 
 #-----------------------------------------------------------------------

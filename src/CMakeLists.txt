@@ -11,8 +11,9 @@ include_directories(../include)
 #-----------------------------------------------------------------------
 # Build the library
 
-set(LIBSWANSON_SRC
-    libswanson/foo.c
+set(LIBLAGAVULIN_SRC
+    liblagavulin/method.c
+    liblagavulin/method-set.c
 )
 
 # Update the VERSION and SOVERSION properties below according to the following
@@ -41,20 +42,23 @@ set(LIBSWANSON_SRC
 #
 # [1] http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html#Updating-version-info
 
-add_library(libswanson SHARED ${LIBSWANSON_SRC})
-set_target_properties(libswanson PROPERTIES
-    OUTPUT_NAME swanson
+add_library(liblagavulin SHARED ${LIBLAGAVULIN_SRC})
+set_target_properties(liblagavulin PROPERTIES
+    OUTPUT_NAME lagavulin
     VERSION 0.0.0
     SOVERSION 0)
-target_link_libraries(libswanson
+target_link_libraries(liblagavulin
+    ${CORK_LIBRARIES}
 )
 
-install(TARGETS libswanson DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(TARGETS liblagavulin DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 #-----------------------------------------------------------------------
 # Generate the pkg-config file
 
 set(prefix ${CMAKE_INSTALL_PREFIX})
-configure_file(libswanson.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libswanson.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libswanson.pc
+configure_file(
+    liblagavulin.pc.in ${CMAKE_CURRENT_BINARY_DIR}/liblagavulin.pc @ONLY
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/liblagavulin.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)

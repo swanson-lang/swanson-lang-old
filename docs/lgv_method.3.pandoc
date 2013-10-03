@@ -1,0 +1,73 @@
+% lgv_method(3)
+
+# NAME
+
+lgv_method -- S₀ methods
+
+# SYNOPSIS
+
+| **#include &lt;lagavulin.h&gt;**
+|
+| **struct lgv_method**;
+|
+| **struct lgv_parameter** {
+|     const char  \*name;
+|     struct lgv_ref  \*ref;
+| };
+|
+| typedef int
+| (\***lgv_method_invoke_f**)(void \**user_data*, size_t *param_count*,
+|                        struct lgv_parameter \**params*);
+|
+| struct lgv_method \*
+| **lgv_method_new**(void \**user_data*, cork_free_f *free_user_data*,
+|                lgv_method_invoke_f *invoke*);
+|
+| void
+| **lgv_method_free**(struct lgv_method \**method*);
+|
+| int
+| **lgv_method_invoke**(struct lgv_method \**method*, size_t *param_count*,
+|                   struct lgv_parameter \**params*);
+
+
+# DESCRIPTION
+
+In Lagavulin, each S₀ method is represented by an instance of **lgv_method**.
+
+**lgv_method_new**() allocates a new method instance, with the given callback
+implementations (see below for details).  **lgv_method_free**() frees a method
+instance.
+
+**lgv_method_invoke**() executes a method with a particular set of runtime
+parameters.  In S₀, the inputs and outputs of a method are all included in a
+single set of (named) parameters.  In Lagavulin, you provide the actual
+parameters of a method call using *param_count* and *params*.  This array must
+include one **lgv_parameter** instance for each of the method's formal
+parameters.  Each parameter instance contains the *name* of the formal
+parameter, and the **lgv_ref**(3) instance of the actual parameter's runtime
+value.  These **lgv_ref**(3) instances might be modified, depending on the
+semantics of the method that's being called.  The C strings that are used for
+the *name* fields only have to be valid for the duration of this method call.
+
+
+# CALLBACK METHODS
+
+*invoke*
+
+  : Called each time the method is invoked.  *param_count* and *params* provide
+    the runtime values of the method's actual parameters.  You are free to
+    modify the contents of these parameters, if that's appropriate to the method
+    that you're implementing.
+
+
+# RETURN VALUE
+
+**lgv_method_new**() will always return a valid new method instance.  If there
+are any memory allocation errors, we will abort the process.
+
+Your *invoke* callback must conform to the libcork error protocol.  See
+**cork-errors**(7) for more details.
+
+All of the other functions on this page conform to the libcork error protocol.
+See **cork-errors**(7) for more details.

@@ -1,0 +1,111 @@
+.TH "lgv_method" "3" "2013-10-01" "" ""
+.SH NAME
+.PP
+lgv_method \[en] S₀ methods
+.SH SYNOPSIS
+.PP
+\f[B]#include <lagavulin.h>\f[]
+.PP
+\f[B]struct lgv_method\f[];
+.PP
+\f[B]struct lgv_parameter\f[] {
+.PD 0
+.P
+.PD
+\ \ \ \ const char *name;
+.PD 0
+.P
+.PD
+\ \ \ \ struct lgv_ref *ref;
+.PD 0
+.P
+.PD
+};
+.PP
+typedef int
+.PD 0
+.P
+.PD
+(*\f[B]lgv_method_invoke_f\f[])(void *\f[I]user_data\f[], size_t
+\f[I]param_count\f[],
+.PD 0
+.P
+.PD
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ struct lgv_parameter
+*\f[I]params\f[]);
+.PP
+struct lgv_method *
+.PD 0
+.P
+.PD
+\f[B]lgv_method_new\f[](void *\f[I]user_data\f[], cork_free_f
+\f[I]free_user_data\f[],
+.PD 0
+.P
+.PD
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ lgv_method_invoke_f \f[I]invoke\f[]);
+.PP
+void
+.PD 0
+.P
+.PD
+\f[B]lgv_method_free\f[](struct lgv_method *\f[I]method\f[]);
+.PP
+int
+.PD 0
+.P
+.PD
+\f[B]lgv_method_invoke\f[](struct lgv_method *\f[I]method\f[], size_t
+\f[I]param_count\f[],
+.PD 0
+.P
+.PD
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ struct lgv_parameter
+*\f[I]params\f[]);
+.SH DESCRIPTION
+.PP
+In Lagavulin, each S₀ method is represented by an instance of
+\f[B]lgv_method\f[].
+.PP
+\f[B]lgv_method_new\f[]() allocates a new method instance, with the
+given callback implementations (see below for details).
+\f[B]lgv_method_free\f[]() frees a method instance.
+.PP
+\f[B]lgv_method_invoke\f[]() executes a method with a particular set of
+runtime parameters.
+In S₀, the inputs and outputs of a method are all included in a single
+set of (named) parameters.
+In Lagavulin, you provide the actual parameters of a method call using
+\f[I]param_count\f[] and \f[I]params\f[].
+This array must include one \f[B]lgv_parameter\f[] instance for each of
+the method's formal parameters.
+Each parameter instance contains the \f[I]name\f[] of the formal
+parameter, and the \f[B]lgv_ref\f[](3) instance of the actual
+parameter's runtime value.
+These \f[B]lgv_ref\f[](3) instances might be modified, depending on the
+semantics of the method that's being called.
+The C strings that are used for the \f[I]name\f[] fields only have to be
+valid for the duration of this method call.
+.SH CALLBACK METHODS
+.TP
+.B \f[I]invoke\f[]
+Called each time the method is invoked.
+\f[I]param_count\f[] and \f[I]params\f[] provide the runtime values of
+the method's actual parameters.
+You are free to modify the contents of these parameters, if that's
+appropriate to the method that you're implementing.
+.RS
+.RE
+.SH RETURN VALUE
+.PP
+\f[B]lgv_method_new\f[]() will always return a valid new method
+instance.
+If there are any memory allocation errors, we will abort the process.
+.PP
+Your \f[I]invoke\f[] callback must conform to the libcork error
+protocol.
+See \f[B]cork\-errors\f[](7) for more details.
+.PP
+All of the other functions on this page conform to the libcork error
+protocol.
+See \f[B]cork\-errors\f[](7) for more details.

@@ -23,7 +23,7 @@ link_directories(${CHECK_LIBRARY_DIRS})
 
 macro(make_test test_name)
     add_executable(${test_name} ${test_name}.c)
-    target_link_libraries(${test_name} ${CHECK_LIBRARIES} libswanson)
+    target_link_libraries(${test_name} ${CHECK_LIBRARIES} liblagavulin)
     add_test(${test_name} ${test_name})
 endmacro(make_test)
 

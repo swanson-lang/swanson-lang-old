@@ -1,0 +1,105 @@
+.TH "lgv_method_set" "3" "2013-10-01" "" ""
+.SH NAME
+.PP
+lgv_method_set \[en] S₀ method sets
+.SH SYNOPSIS
+.PP
+\f[B]#include <lagavulin.h>\f[]
+.PP
+\f[B]struct lgv_method_set\f[];
+.PP
+struct lgv_method_set *
+.PD 0
+.P
+.PD
+\f[B]lgv_method_set_new\f[](void);
+.PP
+void
+.PD 0
+.P
+.PD
+\f[B]lgv_method_set_free\f[](struct lgv_method_set *\f[I]set\f[]);
+.PP
+void
+.PD 0
+.P
+.PD
+\f[B]lgv_method_set_add\f[](struct lgv_method_set *\f[I]set\f[], const
+char *\f[I]name\f[],
+.PD 0
+.P
+.PD
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ struct lgv_method
+*\f[I]method\f[]);
+.PP
+void
+.PD 0
+.P
+.PD
+\f[B]lgv_method_set_add_new\f[](struct lgv_method_set *\f[I]set\f[],
+const char *\f[I]name\f[],
+.PD 0
+.P
+.PD
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ void *\f[I]user_data\f[],
+cork_free_f \f[I]free_user_data\f[],
+.PD 0
+.P
+.PD
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ lgv_method_invoke_f
+\f[I]invoke\f[]);
+.PP
+struct lgv_method *
+.PD 0
+.P
+.PD
+\f[B]lgv_method_set_get\f[](struct lgv_method_set *\f[I]set\f[], const
+char *\f[I]name\f[]);
+.PP
+struct lgv_method *
+.PD 0
+.P
+.PD
+\f[B]lgv_method_set_require\f[](struct lgv_method_set *\f[I]set\f[],
+const char *\f[I]name\f[],
+.PD 0
+.P
+.PD
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ const char
+*\f[I]where\f[]);
+.SH DESCRIPTION
+.PP
+A \f[B]lgv_method_set\f[] is a collection of named methods, which define
+the operations that you can perform on an S₀ value.
+.PP
+\f[B]lgv_method_set_new\f[]() allocates a new method set, which is
+initially empty.
+\f[B]lgv_method_set_free\f[]() frees a method set, and all of the
+methods that it contains.
+.PP
+\f[B]lgv_method_set_add\f[]() adds a \f[I]method\f[] with the given
+\f[I]name\f[] to the set.
+\f[B]lgv_method_set_add_new\f[]() is a helper function that creates a
+new method instance and immediately adds it to the set.
+It is equivalent to calling \f[B]lgv_method_new\f[](3) followed by
+\f[B]lgv_method_set_add\f[].
+For both functions, if there is already a method with the same name in
+the set, it is overwritten.
+.PP
+\f[B]lgv_method_set_get\f[]() and \f[B]lgv_method_set_require\f[]()
+retrieve the method with the given name in the set.
+\f[B]lgv_method_set_get\f[]() doesn't consider it an error for the
+method not to exist; \f[B]lgv_method_set_require\f[]() does.
+The \f[I]where\f[] parameter is used to construct an error message if
+the method is missing; it should be the name of the object or value that
+the method set belongs to.
+.SH RETURN VALUE
+.PP
+\f[B]lgv_method_set_new\f[]() will always return a valid new method set.
+If there are any memory allocation errors, we will abort the process.
+.PP
+If the method in question does not exist, \f[B]lgv_method_set_get\f[]()
+will simply return \f[C]NULL\f[].
+\f[B]lgv_method_set_require\f[]() will set a libcork error condition and
+return \f[C]NULL\f[].
+See \f[B]cork\-errors\f[](7) for more details.

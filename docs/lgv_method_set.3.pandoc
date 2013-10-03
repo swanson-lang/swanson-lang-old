@@ -1,0 +1,66 @@
+% lgv_method_set(3)
+
+# NAME
+
+lgv_method_set -- S₀ method sets
+
+# SYNOPSIS
+
+| **#include &lt;lagavulin.h&gt;**
+|
+| **struct lgv_method_set**;
+|
+| struct lgv_method_set \*
+| **lgv_method_set_new**(void);
+|
+| void
+| **lgv_method_set_free**(struct lgv_method_set \**set*);
+|
+| void
+| **lgv_method_set_add**(struct lgv_method_set \**set*, const char \**name*,
+|                    struct lgv_method \**method*);
+|
+| void
+| **lgv_method_set_add_new**(struct lgv_method_set \**set*, const char \**name*,
+|                        void \**user_data*, cork_free_f *free_user_data*,
+|                        lgv_method_invoke_f *invoke*);
+|
+| struct lgv_method \*
+| **lgv_method_set_get**(struct lgv_method_set \**set*, const char \**name*);
+|
+| struct lgv_method \*
+| **lgv_method_set_require**(struct lgv_method_set \**set*, const char \**name*,
+|                        const char \**where*);
+
+
+# DESCRIPTION
+
+A **lgv_method_set** is a collection of named methods, which define the
+operations that you can perform on an S₀ value.
+
+**lgv_method_set_new**() allocates a new method set, which is initially empty.
+**lgv_method_set_free**() frees a method set, and all of the methods that it
+contains.
+
+**lgv_method_set_add**() adds a *method* with the given *name* to the set.
+**lgv_method_set_add_new**() is a helper function that creates a new method
+instance and immediately adds it to the set.  It is equivalent to calling
+**lgv_method_new**(3) followed by **lgv_method_set_add**.  For both functions,
+if there is already a method with the same name in the set, it is overwritten.
+
+**lgv_method_set_get**() and **lgv_method_set_require**() retrieve the method
+with the given name in the set.  **lgv_method_set_get**() doesn't consider it an
+error for the method not to exist; **lgv_method_set_require**() does.  The
+*where* parameter is used to construct an error message if the method is
+missing; it should be the name of the object or value that the method set
+belongs to.
+
+
+# RETURN VALUE
+
+**lgv_method_set_new**() will always return a valid new method set.  If there
+are any memory allocation errors, we will abort the process.
+
+If the method in question does not exist, **lgv_method_set_get**() will simply
+return `NULL`.  **lgv_method_set_require**() will set a libcork error condition
+and return `NULL`.  See **cork-errors**(7) for more details.
