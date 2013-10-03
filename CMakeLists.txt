@@ -56,6 +56,17 @@ if(DEFINED ENV{TILERA_ROOT})
 endif()
 
 #-----------------------------------------------------------------------
+# Check for prerequisite libraries
+
+pkg_check_modules(CORK REQUIRED libcork>=0.12.0)
+include_directories(${CORK_INCLUDE_DIRS})
+link_directories(${CORK_LIBRARY_DIRS})
+
+pkg_check_modules(CLOG REQUIRED clogger>=0.2.0)
+include_directories(${CLOG_INCLUDE_DIRS})
+link_directories(${CLOG_LIBRARY_DIRS})
+
+#-----------------------------------------------------------------------
 # Set some options
 
 if(APPLE)

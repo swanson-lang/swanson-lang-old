@@ -8,14 +8,6 @@
 
 include_directories(../include)
 
-#-----------------------------------------------------------------------
-# Build the library
-
-set(LIBLAGAVULIN_SRC
-    liblagavulin/method.c
-    liblagavulin/method-set.c
-)
-
 # Update the VERSION and SOVERSION properties below according to the following
 # rules (taken from [1]):
 #
@@ -42,6 +34,30 @@ set(LIBLAGAVULIN_SRC
 #
 # [1] http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html#Updating-version-info
 
+
+#-----------------------------------------------------------------------
+# pkg-config file support
+
+set(prefix ${CMAKE_INSTALL_PREFIX})
+macro(make_pkgconfig NAME)
+    configure_file(
+        ${NAME}.pc.in ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pc @ONLY
+    )
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pc
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+endmacro(make_pkgconfig)
+
+
+#-----------------------------------------------------------------------
+# liblagavulin
+
+set(LIBLAGAVULIN_SRC
+    liblagavulin/common.c
+    liblagavulin/method.c
+    liblagavulin/method-set.c
+    liblagavulin/builtins/size.c
+)
+
 add_library(liblagavulin SHARED ${LIBLAGAVULIN_SRC})
 set_target_properties(liblagavulin PROPERTIES
     OUTPUT_NAME lagavulin
@@ -51,14 +67,5 @@ target_link_libraries(liblagavulin
     ${CORK_LIBRARIES}
 )
 
+make_pkgconfig(liblagavulin)
 install(TARGETS liblagavulin DESTINATION ${CMAKE_INSTALL_LIBDIR})
-
-#-----------------------------------------------------------------------
-# Generate the pkg-config file
-
-set(prefix ${CMAKE_INSTALL_PREFIX})
-configure_file(
-    liblagavulin.pc.in ${CMAKE_CURRENT_BINARY_DIR}/liblagavulin.pc @ONLY
-)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/liblagavulin.pc
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)

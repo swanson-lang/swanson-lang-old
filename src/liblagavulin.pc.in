@@ -10,3 +10,4 @@ Version: @VERSION@
 URL: https://github.com/swanson-lang/swanson-lang/
 Libs: -L${libdir} -llagavulin
 Cflags: -I${includedir}
+Requires: libcork >= 0.12.0

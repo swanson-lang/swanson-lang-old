@@ -8,6 +8,7 @@
  */
 
 #include <libcork/core.h>
+#include <libcork/helpers/errors.h>
 
 #include "lagavulin.h"
 
@@ -42,4 +43,32 @@ lgv_method_invoke(struct lgv_method *method, size_t param_count,
                   struct lgv_parameter *params)
 {
     return method->invoke(method->user_data, param_count, params);
+}
+
+
+struct lgv_ref *
+lgv_parameter_get_ref(const char *name, size_t param_count,
+                      struct lgv_parameter *params)
+{
+    size_t  i;
+    for (i = 0; i < param_count; i++) {
+        if (strcmp(name, params[i].name) == 0) {
+            return params[i].ref;
+        }
+    }
+    lgv_bad_method_call("Expected a parameter named %s", name);
+    return NULL;
+}
+
+void *
+lgv_parameter_get_value(const char *name, size_t param_count,
+                        struct lgv_parameter *params)
+{
+    struct lgv_ref  *ref;
+    rpp_check(ref = lgv_parameter_get_ref(name, param_count, params));
+    if (ref == NULL) {
+        return ref;
+    } else {
+        return ref->value;
+    }
 }
