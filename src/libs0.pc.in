@@ -4,10 +4,10 @@ libdir=${exec_prefix}/lib
 includedir=${prefix}/include
 sharedir=${prefix}/share
 
-Name: Swanson runtime library
-Description: Swanson runtime library
+Name: Swanson S0 support library
+Description: Swanson S0 support library
 Version: @VERSION@
 URL: https://github.com/swanson-lang/swanson-lang/
-Libs: -L${libdir} -lswanson
+Libs: -L${libdir} -ls0
 Cflags: -I${includedir}
-Requires: libcork >= 0.12.0
+Requires.private: libcork >= 0.12.0

@@ -1,0 +1,90 @@
+% s0_formals(3)
+
+# NAME
+
+s0_formals -- Formal parameter sets
+
+# SYNOPSIS
+
+| **#include &lt;s0.h&gt;**
+|
+| **struct s0_formals**;
+|
+| **struct s0_formal** {
+|     const char  \**name*;
+|     struct s0_ref_type  \**pre*;
+|     struct s0_ref_type  \**post*;
+| };
+|
+| struct s0_formals \*
+| **s0_formals_new**(const char \**name*);
+|
+| void
+| **s0_formals_free**(struct s0_formals \**set*);
+|
+| int
+| **s0_formals_add**(struct s0_formals \**set*, const char \**name*,
+|                struct s0_ref_type \**pre*, struct s0_ref_type \**post*);
+|
+| const struct s0_formal \*
+| **s0_formals_get**(const struct s0_formals \**set*, const char \**name*);
+|
+| const struct s0_formal \*
+| **s0_formals_require**(const struct s0_formals \**set*, const char \**name*);
+|
+| typedef int
+| (\***s0_formal_map_f**)(void \**user_data*, const struct s0_formal \**param*);
+|
+| int
+| **s0_formals_map**(const struct s0_formals \**set*, s0_formal_map_f *map*,
+|                void \**user_data*);
+
+
+# DESCRIPTION
+
+The **s0_formals** type describes the set of *formal parameters* that an S₀
+method takes.  Unlike most other programming languages, we do not have separate
+sets for the input and output parameters of the method.  In S₀, this information
+is instead given by the types of the parameters.
+
+Each formal parameter is represented by an instance of the **s0_formal** type.
+You do not allocate instance of this type yourself; they will be managed by the
+**s0_formals** instance that the parameter belongs to.  Each formal parameter
+has a *name*, and *pre* and *post* types.  When the method is called, the caller
+must provide values for each parameter, and the types of those values must
+satisfy the corresponding formal parameter's *pre* type.  When the method
+returns, the values' types will have changed, becoming the corresponding *post*
+type.
+
+**s0_formals_new**() allocates a new set of formal parameters, which will
+initially be empty.  **s0_formals_free**() frees a method instance, and all of
+the parameters that it contains.
+
+**s0_formals_add**() adds a new formal parameter, with the given *name* and
+*pre* and *post* types.  There must not already be a parameter in *set* with the
+same name; if there is, we'll raise an error.
+
+**s0_formals_set_get**() and **s0_formals_set_require**() retrieve the parameter
+with the given name from *set*.  **s0_formals_set_get**() doesn't consider it an
+error for the parameter not to exist; **s0_formals_set_require**() does.  The
+**s0_formal** instance that is returned belongs to the set; you must not change
+its contents.
+
+**s0_formals_map**() applies a *map* function to each parameter in *set*.  The
+*user_data* parameter allows you to pass additional information to the mapping
+function.  Your mapping function should return 0 for each parameter that is
+processed successfully.  If your mapping function returns a non-zero value, we
+will stop processing parameters, and return that some value as the result of
+**s0_formals_map**().  If every parameter is processed successfully, we will
+return 0.  (In particular, this means that if your mapping function conforms to
+the libcork error protocol, then the overall **s0_formals_map**() call will,
+too.)
+
+
+# RETURN VALUE
+
+**s0_formals_new**() will always return a valid new formal parameter set.  If
+there are any memory allocation errors, we will abort the process.
+
+All of the other functions on this page conform to the libcork error protocol.
+See **cork-errors**(7) for more details.

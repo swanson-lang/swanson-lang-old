@@ -8,13 +8,6 @@
 
 include_directories(../include)
 
-#-----------------------------------------------------------------------
-# Build the library
-
-set(LIBSWANSON_SRC
-    libswanson/foo.c
-)
-
 # Update the VERSION and SOVERSION properties below according to the following
 # rules (taken from [1]):
 #
@@ -41,20 +34,35 @@ set(LIBSWANSON_SRC
 #
 # [1] http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html#Updating-version-info
 
-add_library(libswanson SHARED ${LIBSWANSON_SRC})
-set_target_properties(libswanson PROPERTIES
-    OUTPUT_NAME swanson
-    VERSION 0.0.0
-    SOVERSION 0)
-target_link_libraries(libswanson
-)
-
-install(TARGETS libswanson DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 #-----------------------------------------------------------------------
-# Generate the pkg-config file
+# pkg-config file support
 
 set(prefix ${CMAKE_INSTALL_PREFIX})
-configure_file(libswanson.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libswanson.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libswanson.pc
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+macro(make_pkgconfig NAME)
+    configure_file(
+        ${NAME}.pc.in ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pc @ONLY
+    )
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pc
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+endmacro(make_pkgconfig)
+
+
+#-----------------------------------------------------------------------
+# libs0
+
+set(LIBS0_SRC
+    libs0/formals.c
+)
+
+add_library(libs0 SHARED ${LIBS0_SRC})
+set_target_properties(libs0 PROPERTIES
+    OUTPUT_NAME s0
+    VERSION 0.0.0
+    SOVERSION 0)
+target_link_libraries(libs0
+    ${CORK_LIBRARIES}
+)
+
+make_pkgconfig(libs0)
+install(TARGETS libs0 DESTINATION ${CMAKE_INSTALL_LIBDIR})

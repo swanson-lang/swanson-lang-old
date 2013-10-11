@@ -6,7 +6,8 @@
 # Please see the COPYING file in this distribution for license details.
 # ----------------------------------------------------------------------
 
-include_directories(../include)
+include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/../src)
 
 #-----------------------------------------------------------------------
@@ -22,13 +23,19 @@ link_directories(${CHECK_LIBRARY_DIRS})
 # Build the test cases
 
 macro(make_test test_name)
+    get_filename_component(test_directory ${test_name} PATH)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${test_directory})
     add_executable(${test_name} ${test_name}.c)
-    target_link_libraries(${test_name} ${CHECK_LIBRARIES} libswanson)
+    target_link_libraries(${test_name}
+        ${CHECK_LIBRARIES}
+        ${CORK_LIBRARIES}
+        ${CLOG_LIBRARIES}
+        libs0
+    )
     add_test(${test_name} ${test_name})
 endmacro(make_test)
 
-# Add calls to make_test for each .c test case in the tests/ directory.
-# make_test(test-foo)
+make_test(s0/test-ast)
 
 #-----------------------------------------------------------------------
 # Command-line tests

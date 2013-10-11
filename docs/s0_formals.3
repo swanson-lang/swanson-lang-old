@@ -1,0 +1,142 @@
+.TH "s0_formals" "3" "2013-10-01" "Swanson" "Swanson\ documentation"
+.SH NAME
+.PP
+s0_formals \[en] Formal parameter sets
+.SH SYNOPSIS
+.PP
+\f[B]#include <s0.h>\f[]
+.PP
+\f[B]struct s0_formals\f[];
+.PP
+\f[B]struct s0_formal\f[] {
+.PD 0
+.P
+.PD
+\ \ \ \ const char *\f[I]name\f[];
+.PD 0
+.P
+.PD
+\ \ \ \ struct s0_ref_type *\f[I]pre\f[];
+.PD 0
+.P
+.PD
+\ \ \ \ struct s0_ref_type *\f[I]post\f[];
+.PD 0
+.P
+.PD
+};
+.PP
+struct s0_formals *
+.PD 0
+.P
+.PD
+\f[B]s0_formals_new\f[](const char *\f[I]name\f[]);
+.PP
+void
+.PD 0
+.P
+.PD
+\f[B]s0_formals_free\f[](struct s0_formals *\f[I]set\f[]);
+.PP
+int
+.PD 0
+.P
+.PD
+\f[B]s0_formals_add\f[](struct s0_formals *\f[I]set\f[], const char
+*\f[I]name\f[],
+.PD 0
+.P
+.PD
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ struct s0_ref_type *\f[I]pre\f[], struct
+s0_ref_type *\f[I]post\f[]);
+.PP
+const struct s0_formal *
+.PD 0
+.P
+.PD
+\f[B]s0_formals_get\f[](const struct s0_formals *\f[I]set\f[], const
+char *\f[I]name\f[]);
+.PP
+const struct s0_formal *
+.PD 0
+.P
+.PD
+\f[B]s0_formals_require\f[](const struct s0_formals *\f[I]set\f[], const
+char *\f[I]name\f[]);
+.PP
+typedef int
+.PD 0
+.P
+.PD
+(*\f[B]s0_formal_map_f\f[])(void *\f[I]user_data\f[], const struct
+s0_formal *\f[I]param\f[]);
+.PP
+int
+.PD 0
+.P
+.PD
+\f[B]s0_formals_map\f[](const struct s0_formals *\f[I]set\f[],
+s0_formal_map_f \f[I]map\f[],
+.PD 0
+.P
+.PD
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ void *\f[I]user_data\f[]);
+.SH DESCRIPTION
+.PP
+The \f[B]s0_formals\f[] type describes the set of \f[I]formal
+parameters\f[] that an S₀ method takes.
+Unlike most other programming languages, we do not have separate sets
+for the input and output parameters of the method.
+In S₀, this information is instead given by the types of the parameters.
+.PP
+Each formal parameter is represented by an instance of the
+\f[B]s0_formal\f[] type.
+You do not allocate instance of this type yourself; they will be managed
+by the \f[B]s0_formals\f[] instance that the parameter belongs to.
+Each formal parameter has a \f[I]name\f[], and \f[I]pre\f[] and
+\f[I]post\f[] types.
+When the method is called, the caller must provide values for each
+parameter, and the types of those values must satisfy the corresponding
+formal parameter's \f[I]pre\f[] type.
+When the method returns, the values' types will have changed, becoming
+the corresponding \f[I]post\f[] type.
+.PP
+\f[B]s0_formals_new\f[]() allocates a new set of formal parameters,
+which will initially be empty.
+\f[B]s0_formals_free\f[]() frees a method instance, and all of the
+parameters that it contains.
+.PP
+\f[B]s0_formals_add\f[]() adds a new formal parameter, with the given
+\f[I]name\f[] and \f[I]pre\f[] and \f[I]post\f[] types.
+There must not already be a parameter in \f[I]set\f[] with the same
+name; if there is, we'll raise an error.
+.PP
+\f[B]s0_formals_set_get\f[]() and \f[B]s0_formals_set_require\f[]()
+retrieve the parameter with the given name from \f[I]set\f[].
+\f[B]s0_formals_set_get\f[]() doesn't consider it an error for the
+parameter not to exist; \f[B]s0_formals_set_require\f[]() does.
+The \f[B]s0_formal\f[] instance that is returned belongs to the set; you
+must not change its contents.
+.PP
+\f[B]s0_formals_map\f[]() applies a \f[I]map\f[] function to each
+parameter in \f[I]set\f[].
+The \f[I]user_data\f[] parameter allows you to pass additional
+information to the mapping function.
+Your mapping function should return 0 for each parameter that is
+processed successfully.
+If your mapping function returns a non\-zero value, we will stop
+processing parameters, and return that some value as the result of
+\f[B]s0_formals_map\f[]().
+If every parameter is processed successfully, we will return 0.
+(In particular, this means that if your mapping function conforms to the
+libcork error protocol, then the overall \f[B]s0_formals_map\f[]() call
+will, too.)
+.SH RETURN VALUE
+.PP
+\f[B]s0_formals_new\f[]() will always return a valid new formal
+parameter set.
+If there are any memory allocation errors, we will abort the process.
+.PP
+All of the other functions on this page conform to the libcork error
+protocol.
+See \f[B]cork\-errors\f[](7) for more details.
