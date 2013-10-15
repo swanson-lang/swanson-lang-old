@@ -22,6 +22,14 @@
  * Formal parameter sets
  */
 
+static struct s0_ref_type *
+new_any_ref_type(void)
+{
+    struct s0_value_type  *vtype = s0_value_type_new_any();
+    struct s0_interface_type  *itype = s0_interface_type_new_var(0);
+    return s0_ref_type_new(vtype, itype);
+}
+
 /* TODO: Eventually verify the pre and post types */
 static void
 check_formal_param(struct s0_formals *formals, const char *param_name)
@@ -42,9 +50,12 @@ START_TEST(test_formals_require)
     struct s0_formals  *formals;
     DESCRIBE_TEST;
     formals = s0_formals_new("test");
-    fail_if_error(s0_formals_add(formals, "lhs", NULL, NULL));
-    fail_if_error(s0_formals_add(formals, "rhs", NULL, NULL));
-    fail_if_error(s0_formals_add(formals, "result", NULL, NULL));
+    fail_if_error(s0_formals_add
+                  (formals, "lhs", new_any_ref_type(), new_any_ref_type()));
+    fail_if_error(s0_formals_add
+                  (formals, "rhs", new_any_ref_type(), new_any_ref_type()));
+    fail_if_error(s0_formals_add
+                  (formals, "result", new_any_ref_type(), new_any_ref_type()));
     check_formal_param(formals, "lhs");
     check_formal_param(formals, "rhs");
     check_formal_param(formals, "result");
@@ -58,8 +69,10 @@ START_TEST(test_formals_redefined)
     struct s0_formals  *formals;
     DESCRIBE_TEST;
     formals = s0_formals_new("test");
-    fail_if_error(s0_formals_add(formals, "lhs", NULL, NULL));
-    fail_unless_error(s0_formals_add(formals, "lhs", NULL, NULL));
+    fail_if_error(s0_formals_add
+                  (formals, "lhs", new_any_ref_type(), new_any_ref_type()));
+    fail_unless_error(s0_formals_add
+                      (formals, "lhs", new_any_ref_type(), new_any_ref_type()));
     s0_formals_free(formals);
 }
 END_TEST

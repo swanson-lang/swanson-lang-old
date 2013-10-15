@@ -53,6 +53,9 @@ endmacro(make_pkgconfig)
 
 set(LIBS0_SRC
     libs0/formals.c
+    libs0/interface-types.c
+    libs0/ref-types.c
+    libs0/value-types.c
 )
 
 add_library(libs0 SHARED ${LIBS0_SRC})

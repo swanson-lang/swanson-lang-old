@@ -16,8 +16,8 @@
 /* Forward declarations */
 
 struct s0_formals;
+struct s0_interface_type;
 struct s0_ref_type;
-struct s0_type;
 struct s0_value_type;
 
 
@@ -38,6 +38,104 @@ enum s0_error {
     s0_set_error(S0_REDEFINED, __VA_ARGS__)
 #define s0_undefined(...) \
     s0_set_error(S0_UNDEFINED, __VA_ARGS__)
+
+
+/*-----------------------------------------------------------------------
+ * Type variables
+ */
+
+typedef unsigned int  s0_type_var;
+
+
+/*-----------------------------------------------------------------------
+ * Interface types
+ */
+
+enum s0_interface_type_kind {
+    S0_INTERFACE_TYPE_VAR,
+    S0_INTERFACE_TYPE_METHOD_SET
+};
+
+struct s0_method {
+    const char  *name;
+    struct s0_formals  *params;
+};
+
+void
+s0_interface_type_free(struct s0_interface_type *itype);
+
+enum s0_interface_type_kind
+s0_interface_type_kind(const struct s0_interface_type *itype);
+
+
+struct s0_interface_type *
+s0_interface_type_new_var(s0_type_var var);
+
+s0_type_var
+s0_interface_type_var(const struct s0_interface_type *itype);
+
+
+struct s0_interface_type *
+s0_interface_type_new_method_set(const char *name);
+
+/* Takes control of params, error if method already exists */
+int
+s0_interface_type_add_method(struct s0_interface_type *itype,
+                             const char *method_name,
+                             struct s0_formals *params);
+
+const struct s0_method *
+s0_interface_type_get_method(struct s0_interface_type *itype,
+                             const char *method_name);
+
+const struct s0_method *
+s0_interface_type_require_method(struct s0_interface_type *itype,
+                                 const char *method_name);
+
+
+/*-----------------------------------------------------------------------
+ * Value types
+ */
+
+enum s0_value_type_kind {
+    S0_VALUE_TYPE_ANY,
+    S0_VALUE_TYPE_VAR
+};
+
+void
+s0_value_type_free(struct s0_value_type *vtype);
+
+enum s0_value_type_kind
+s0_value_type_kind(const struct s0_value_type *vtype);
+
+
+struct s0_value_type *
+s0_value_type_new_any(void);
+
+
+struct s0_value_type *
+s0_value_type_new_var(s0_type_var var);
+
+s0_type_var
+s0_value_type_var(const struct s0_value_type *vtype);
+
+
+/*-----------------------------------------------------------------------
+ * Reference types
+ */
+
+/* Takes control of vtype and itype */
+struct s0_ref_type *
+s0_ref_type_new(struct s0_value_type *vtype, struct s0_interface_type *itype);
+
+void
+s0_ref_type_free(struct s0_ref_type *rtype);
+
+const struct s0_value_type *
+s0_ref_type_value_type(const struct s0_ref_type *rtype);
+
+const struct s0_interface_type *
+s0_ref_type_interface_type(const struct s0_ref_type *rtype);
 
 
 /*-----------------------------------------------------------------------

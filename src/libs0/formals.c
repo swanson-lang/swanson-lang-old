@@ -35,8 +35,8 @@ static void
 s0_formal_free(struct s0_formal *formal)
 {
     cork_strfree(formal->name);
-    // TODO: s0_ref_type_free(formal->pre);
-    // TODO: s0_ref_type_free(formal->post);
+    s0_ref_type_free(formal->pre);
+    s0_ref_type_free(formal->post);
     free(formal);
 }
 
@@ -81,8 +81,8 @@ s0_formals_add(struct s0_formals *formals, const char *param_name,
         entry->value = formal;
         return 0;
     } else {
-        // TODO: s0_ref_type_free(pre);
-        // TODO: s0_ref_type_free(post);
+        s0_ref_type_free(pre);
+        s0_ref_type_free(post);
         s0_redefined
             ("Parameter named %s in %s already exists",
              param_name, formals->name);
