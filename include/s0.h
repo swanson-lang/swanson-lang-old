@@ -11,6 +11,7 @@
 #define S0_H
 
 #include <libcork/core.h>
+#include <libcork/ds.h>
 
 
 /* Forward declarations */
@@ -41,6 +42,25 @@ enum s0_error {
 
 
 /*-----------------------------------------------------------------------
+ * to_string helpers
+ */
+
+CORK_ATTR_UNUSED
+static void
+s0_indent(struct cork_buffer *dest, size_t indent)
+{
+    static const char  INDENT[] = "        "; /* 8 spaces */
+    size_t  i;
+    for (i = 0; i < (indent / 8); i++) {
+        cork_buffer_append(dest, INDENT, 8);
+    }
+    if ((indent % 8) != 0) {
+        cork_buffer_append(dest, INDENT, (indent % 8));
+    }
+}
+
+
+/*-----------------------------------------------------------------------
  * Type variables
  */
 
@@ -66,6 +86,10 @@ s0_interface_type_free(struct s0_interface_type *itype);
 
 enum s0_interface_type_kind
 s0_interface_type_kind(const struct s0_interface_type *itype);
+
+void
+s0_interface_type_to_string(const struct s0_interface_type *itype,
+                            struct cork_buffer *dest, size_t indent);
 
 
 struct s0_interface_type *
@@ -108,6 +132,10 @@ s0_value_type_free(struct s0_value_type *vtype);
 enum s0_value_type_kind
 s0_value_type_kind(const struct s0_value_type *vtype);
 
+void
+s0_value_type_to_string(const struct s0_value_type *vtype,
+                        struct cork_buffer *dest, size_t indent);
+
 
 struct s0_value_type *
 s0_value_type_new_any(void);
@@ -136,6 +164,10 @@ s0_ref_type_value_type(const struct s0_ref_type *rtype);
 
 const struct s0_interface_type *
 s0_ref_type_interface_type(const struct s0_ref_type *rtype);
+
+void
+s0_ref_type_to_string(const struct s0_ref_type *rtype,
+                      struct cork_buffer *dest, size_t indent);
 
 
 /*-----------------------------------------------------------------------
@@ -171,6 +203,10 @@ typedef int
 int
 s0_formals_map(const struct s0_formals *formals, s0_formal_map_f map,
                void *user_data);
+
+void
+s0_formals_to_string(const struct s0_formals *formals,
+                     struct cork_buffer *dest, size_t indent);
 
 
 #endif /* S0_H */

@@ -31,6 +31,23 @@ s0_value_type_kind(const struct s0_value_type *vtype)
     return vtype->kind;
 }
 
+void
+s0_value_type_to_string(const struct s0_value_type *vtype,
+                        struct cork_buffer *dest, size_t indent)
+{
+    switch (vtype->kind) {
+        case S0_VALUE_TYPE_ANY:
+            break;
+
+        case S0_VALUE_TYPE_VAR:
+            cork_buffer_append_printf(dest, "[v%u] ", vtype->var);
+            break;
+
+        default:
+            cork_unreachable();
+    }
+}
+
 
 struct s0_value_type *
 s0_value_type_new_any(void)

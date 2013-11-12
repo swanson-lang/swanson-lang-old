@@ -46,3 +46,11 @@ s0_ref_type_interface_type(const struct s0_ref_type *rtype)
 {
     return rtype->itype;
 }
+
+void
+s0_ref_type_to_string(const struct s0_ref_type *rtype,
+                      struct cork_buffer *dest, size_t indent)
+{
+    s0_value_type_to_string(rtype->vtype, dest, indent);
+    s0_interface_type_to_string(rtype->itype, dest, indent);
+}
